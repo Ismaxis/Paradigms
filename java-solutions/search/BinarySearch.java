@@ -9,7 +9,7 @@ public class BinarySearch {
         int x = Integer.parseInt(args[0]);
 
         // n := args.length - 1
-        // a[-1] == -inf && a[n] == +inf
+        // a[-1] == +inf && a[n] == -inf
         int[] a = new int[args.length - 1];
         for (int i = 1; i < args.length; i++) {
             a[i - 1] = Integer.parseInt(args[i]);
@@ -21,7 +21,7 @@ public class BinarySearch {
     }
 
     // n := a.length
-    // Pre: forall i=0...n-1 a[i] <= a[i - 1] && a[-1] == -inf && a[n] == +inf
+    // Pre: forall i=0...n-1 a[i] <= a[i - 1] && a[-1] == +inf && a[n] == -inf
     // Post: R = min(0 <= i <= n : a[i] <= x)
     public static int iterativeBinSearch(final int[] a, final int x) {
         // forall i=0...n-1 a[i] <= a[i - 1]
@@ -70,7 +70,7 @@ public class BinarySearch {
     }
 
     // n := a.length
-    // Pre: forall i=0...n-1 a[i] <= a[i - 1] && a[-1] == -inf && a[n] == +inf
+    // Pre: forall i=0...n-1 a[i] <= a[i - 1] && a[-1] == +inf && a[n] == -inf
     // Post: R = min(0 <= i <= n : a[i] <= x)
     public static int recursiveBinSearch(final int[] a, final int x) {
         return recursiveBinSearch(a, x, -1, a.length);
