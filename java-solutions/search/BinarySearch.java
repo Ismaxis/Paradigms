@@ -4,7 +4,7 @@ public class BinarySearch {
     // Pre: args.length > 0 &&
     //      forall i=0...args.length-1 args[i] - строковое представление целого числа от -2^31 до 2^31 - 1 &&
     //      forall i=1...args.length-2 a[i] <= a[i - 1] - где а[i - 1] = Integer.parseInt(args[i])
-    // Post: R = min(i : a[i] <= x)
+    // Post: min(i : a[i] <= x) is printed to System.out
     public static void main(String[] args) {
         int x = Integer.parseInt(args[0]);
 
