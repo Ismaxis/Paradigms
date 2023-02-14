@@ -6,8 +6,8 @@ public class BinarySearchUni {
     //      forall i=0...n-1 args[i] - строковое представление целого числа от -2^31 до 2^31 - 1 &&
     //      а[i] = Integer.parseInt(args[i]) &&
     //      exists R in [0; n) :
-    //          forall i in [0; R - 1] a[i - 1] < a[i] &&
-    //          forall i in [R; n)     a[i - 1] > a[i]
+    //          forall i in [0; R - 1]: a[i - 1] < a[i] &&
+    //          forall i in [R; n):     a[i - 1] > a[i]
     // Post: min(R) is printed to System.out
     public static void main(String[] args) {
         int[] a = new int[args.length];
@@ -102,8 +102,8 @@ public class BinarySearchUni {
     //    forall i in [R; n)     a[i - 1] > a[i] &&
     //    r' - l' > 1 && 0 <= l' <= res < r' <= n
     // Post: R = min(r in [0; n) :
-    //    forall i in [0; R - 1] a[i - 1] < a[i] &&
-    //    forall i in [R; n)     a[i - 1] > a[i])
+    //    forall i in [0; r - 1] a[i - 1] < a[i] &&
+    //    forall i in [r; n)     a[i - 1] > a[i])
     public static int recursiveBinSearch(final int[] a, final int l, final int r) {
         // exists res in [0; n) :
         //          forall i in [0; res - 1] a[i - 1] < a[i] &&
