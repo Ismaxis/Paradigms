@@ -13,9 +13,9 @@ import java.util.Objects;
     clears
  */
 public class ArrayQueueADT {
-    private /* static */ int size;
-    private /* static */ int head;
-    private /* static */ Object[] elements = new Object[2];
+    private int size;
+    private int head;
+    private Object[] elements = new Object[2];
 
     public static void enqueue(ArrayQueueADT queue, Object element) {
         Objects.requireNonNull(element);
@@ -61,19 +61,5 @@ public class ArrayQueueADT {
         queue.elements = new Object[2];
         queue.size = 0;
         queue.head = 0;
-    }
-
-    public static void degPrint(ArrayQueueADT queue) {
-        System.out.println("--- dbg ---");
-        System.out.println("queue.size: " +  queue.size);
-        for (Object element : queue.elements) {
-            System.out.print((element == null ? "n" : element) + " ");
-        }
-        System.out.println();
-
-        for (int i = 0; i < queue.elements.length; i++) {
-            System.out.print(i == queue.head ? "| " : "  ");
-        }
-        System.out.println("\n--- end ---\n");
     }
 }

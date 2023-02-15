@@ -63,18 +63,4 @@ public class ArrayQueue {
         size = 0;
         head = 0;
     }
-
-    public void degPrint() {
-        System.out.println("--- dbg ---");
-        System.out.println("size: " +  size);
-        for (Object element : elements) {
-            System.out.print((element == null ? "n" : element) + " ");
-        }
-        System.out.println();
-
-        for (int i = 0; i < elements.length; i++) {
-            System.out.print(i == head ? "| " : "  ");
-        }
-        System.out.println("\n--- end ---\n");
-    }
 }
