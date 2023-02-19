@@ -20,8 +20,14 @@ public class ArrayQueue {
     private static final int INITIAL_SIZE = 5;
     private int size;
     private int head;
-    private Object[] elements = new Object[INITIAL_SIZE];
-    
+    private Object[] elements;
+
+    public ArrayQueue() {
+        elements = new Object[INITIAL_SIZE];
+        size = 0;
+        head = 0;
+    }
+
     // Pre: element != null
     // Post: this.n' = this.n + 1 &&
     //       this.a[this.n'] = element &&
