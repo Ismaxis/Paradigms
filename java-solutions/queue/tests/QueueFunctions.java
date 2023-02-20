@@ -6,4 +6,5 @@ public interface QueueFunctions {
     Object dequeue();
     int size();
     boolean isEmpty();
+    void clear();
 }

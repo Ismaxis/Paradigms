@@ -19,7 +19,18 @@ public class ArrayQueueADT {
     private static final int INITIAL_SIZE = 5;
     private int size;
     private int head;
-    private Object[] elements = new Object[INITIAL_SIZE];
+    private Object[] elements;
+    {
+        elements = new Object[INITIAL_SIZE];
+    }
+
+    public static ArrayQueueADT create() {
+        ArrayQueueADT queue = new ArrayQueueADT();
+        queue.size = 0;
+        queue.head = 0;
+        queue.elements = new Object[INITIAL_SIZE];
+        return queue;
+    }
 
     // Pre: queue != null && element != null
     // Post: queue.n' = queue.n + 1 &&
