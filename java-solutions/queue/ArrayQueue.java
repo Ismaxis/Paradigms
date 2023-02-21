@@ -109,13 +109,8 @@ public class ArrayQueue {
     //       for i in [1; this.n]:
     //           b[i] = this.a[i]
     public Object[] toArray() {
-        Object[] result = new Object[size];
-        // :NOTE: handmade
-        for (int i = 0; i < size; i++) {
-            result[i] = elements[(head + i) % elements.length];
-        }
-
-        return result;
+        // :NOTE: handmade :FIXED:
+        return copyOfElements(size);
     }
 
 
@@ -145,13 +140,21 @@ public class ArrayQueue {
 
     private void ensureCapacity(int capacity) {
         if (capacity > elements.length) {
-            Object[] newArr = new Object[Math.max(elements.length * 2, capacity)];
-            // :NOTE: handmade
-            for (int i = 0; i < size; i++) {
-                newArr[i] = elements[(head + i) % elements.length];
-            }
-            elements = newArr;
+            // :NOTE: handmade :FIXED:X
+            elements = copyOfElements(Math.max(elements.length * 2, capacity));
             head = 0;
         }
+    }
+
+    private Object[] copyOfElements(int capacity) {
+        Object[] newArr = new Object[capacity];
+        if (head + size <= elements.length) {
+            System.arraycopy(elements, head, newArr, 0, size);
+        } else {
+            int lengthOfLeftPart = elements.length - head;
+            System.arraycopy(elements, head, newArr, 0, lengthOfLeftPart);
+            System.arraycopy(elements, 0, newArr, lengthOfLeftPart, size - lengthOfLeftPart);
+        }
+        return newArr;
     }
 }
