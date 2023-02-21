@@ -30,6 +30,10 @@ public class ArrayQueueModuleTester extends ArrayQueueTester {
         testOrderRandom(qf);
         Printer.println("Tested: Random Inputs");
 
+        ArrayQueueModule.clear();
+        testOrderRandomDeque(qf);
+        Printer.println("Tested: Random Inputs DequeToArray");
+
         Printer.println("Some enqueues and dequeues:");
         Printer.incTab();
 
@@ -73,6 +77,26 @@ public class ArrayQueueModuleTester extends ArrayQueueTester {
             @Override
             public void clear() {
                 ArrayQueueModule.clear();
+            }
+
+            @Override
+            public void push(Object element) {
+                ArrayQueueModule.push(element);
+            }
+
+            @Override
+            public Object peek() {
+                return ArrayQueueModule.peek();
+            }
+
+            @Override
+            public Object remove() {
+                return ArrayQueueModule.remove();
+            }
+
+            @Override
+            public Object[] toArray() {
+                return ArrayQueueModule.toArray();
             }
         };
     }

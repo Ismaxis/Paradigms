@@ -65,9 +65,63 @@ public class ArrayQueue {
         return result;
     }
 
+    // Pre: element != null
+    // Post: this.n' = this.n + 1 &&
+    //       this.a[1] = element &&
+    //       for i in [1; this.n]:
+    //          this.a'[i + 1] = this.a[i]
+    public void push(Object element) {
+        Objects.requireNonNull(element);
+        ensureCapacity(size + 1);
+
+        head = (elements.length + head - 1) % elements.length;
+        elements[head] = element;
+        size++;
+    }
+
+    // Pre: this.n >= 1;
+    // Post: this.n' = this.n &&
+    //       immutable(this, this.n) &&
+    //       R = this.a[this.n]
+    public Object peek() {
+        assert size >= 1;
+
+        return elements[(head + size - 1) % elements.length];
+    }
+
+    // Pre: this.n >= 1;
+    // Post: this.n' = this.n - 1 &&
+    //       immutable(n - 1) &&
+    //       R = a[n]
+    public Object remove() {
+        assert size >= 1;
+
+        int tail = (head + size - 1) % elements.length;
+        Object result = elements[tail];
+        elements[tail] = null;
+        size--;
+        return result;
+    }
+
     // Pre: true
     // Post: this.n' = this.n &&
-    //       immutable(queue, this.n) &&
+    //       immutable(this, this.n) &&
+    //       R = b:
+    //       for i in [1; this.n]:
+    //           b[i] = this.a[i]
+    public Object[] toArray() {
+        Object[] result = new Object[size];
+        for (int i = 0; i < size; i++) {
+            result[i] = elements[(head + i) % elements.length];
+        }
+
+        return result;
+    }
+
+
+    // Pre: true
+    // Post: this.n' = this.n &&
+    //       immutable(this, this.n) &&
     //       R = this.n
     public int size() {
         return size;
@@ -75,7 +129,7 @@ public class ArrayQueue {
 
     // Pre: true
     // Post: this.n' = this.n &&
-    //       immutable(queue, this.n) &&
+    //       immutable(this, this.n) &&
     //       R = (this.n == 0)
     public boolean isEmpty() {
         return size() == 0;
@@ -91,7 +145,7 @@ public class ArrayQueue {
 
     private void ensureCapacity(int capacity) {
         if (capacity > elements.length) {
-            Object[] newArr = Arrays.copyOf(elements, Math.max(elements.length * 2, capacity));
+            Object[] newArr = new Object[Math.max(elements.length * 2, capacity)];
             for (int i = 0; i < size; i++) {
                 newArr[i] = elements[(head + i) % elements.length];
             }

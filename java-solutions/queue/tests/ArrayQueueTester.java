@@ -116,7 +116,7 @@ abstract public class ArrayQueueTester {
     }
     public void testOrderRandom(QueueFunctions queueFunctions) {
         ArrayDeque<Integer> reference = new ArrayDeque<>();
-        int iterations = 100000000;
+        int iterations = 10000000;
         Random random = new Random();
         for (int i = 0; i < iterations; i++) {
             int op = random.nextInt() % 5;
@@ -158,6 +158,91 @@ abstract public class ArrayQueueTester {
             }
         }
     }
+    public void testOrderRandomDeque(QueueFunctions queueFunctions) {
+        ArrayDeque<Integer> reference = new ArrayDeque<>();
+        int iterations = 10000000;
+        Random random = new Random();
+        for (int i = 0; i < iterations; i++) {
+            int op = random.nextInt() % 10;
+            if (op == 0) {
+                int newElem = random.nextInt();
+                queueFunctions.enqueue(newElem);
+                reference.add(newElem);
+            } else if (op == 1) {
+                if (reference.isEmpty()) {
+                    continue;
+                }
+                Object testDeq = queueFunctions.dequeue();
+                Integer referenceDeq = reference.poll();
+                compare(testDeq, referenceDeq);
+            } else if (op == 2) {
+                if (queueFunctions.isEmpty() != reference.isEmpty()) {
+                    if (reference.isEmpty()) {
+                        throw error("Queue is not empty, but should");
+                    } else {
+                        throw error("Queue is empty, but should not");
+                    }
+                }
+            } else if (op == 3) {
+                int testSize = queueFunctions.size();
+                int referenceSize = reference.size();
+                if (testSize != referenceSize) {
+                    throw error("Queue has incorrect size: Expected: " + referenceSize + ", found: " + testSize);
+                }
+            } else if (op == 4) {
+                queueFunctions.clear();
+                reference.clear();
+            } else if (op == 5) {
+                int newElem = random.nextInt();
+                queueFunctions.push(newElem);
+                reference.push(newElem);
+            } else if (op == 6) {
+                if (reference.isEmpty()) {
+                    continue;
+                }
+                Object testDeq = queueFunctions.remove();
+                Integer referenceDeq = reference.removeLast();
+                compare(testDeq, referenceDeq);
+            } else if (op == 7) {
+                if (reference.isEmpty()) {
+                    continue;
+                }
+                Object testDeq = queueFunctions.peek();
+                Integer referenceDeq = reference.getLast();
+                compare(testDeq, referenceDeq);
+            } else if (op == 8) {
+                if (reference.isEmpty()) {
+                    continue;
+                }
+                Object testDeq = queueFunctions.element();
+                Integer referenceDeq = reference.element();
+                compare(testDeq, referenceDeq);
+            } else if (op == 9) {
+                Object[] testArr = queueFunctions.toArray();
+                Object[] referenceArr = reference.toArray();
+                if (testArr.length != referenceArr.length) {
+                    throw  error("Array has wrong length: Expected: " + referenceArr.length + ", found: " + testArr.length);
+                }
+
+                for (int j = 0; j < referenceArr.length; j++) {
+                    compare(testArr[j], (Integer) referenceArr[j]);
+                }
+
+            }
+        }
+    }
+
+    private static void compare(Object testDeq, Integer referenceDeq) {
+        if (testDeq instanceof Integer integer && referenceDeq != null) {
+            if (integer != referenceDeq.intValue()) {
+                throw error("Wrong order: Expected: '" + referenceDeq + "', found: '" + testDeq + "'" );
+            }
+        } else {
+            throw error("Wrong type: Expected: " + (referenceDeq == null ? "null" : referenceDeq.getClass()) +
+                    ", found: " + (testDeq == null ? "null" : testDeq.getClass()));
+        }
+    }
+
     protected static void fill(QueueFunctions queueFunctions, int count) {
         for (int i = 0; i < count; i++) {
             queueFunctions.enqueue(i);

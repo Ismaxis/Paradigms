@@ -31,6 +31,10 @@ public class ArrayQueueClassTester extends ArrayQueueTester {
         testOrderRandom(functionsForClassQueue(queue));
         Printer.println("Tested: Random Inputs");
 
+        queue = new ArrayQueue();
+        testOrderRandomDeque(functionsForClassQueue(queue));
+        Printer.println("Tested: Random Inputs DequeToArray");
+
         Printer.println("Some enqueues and dequeues:");
         Printer.incTab();
         int curIndent = Printer.getIndent();
@@ -88,6 +92,26 @@ public class ArrayQueueClassTester extends ArrayQueueTester {
             @Override
             public void clear() {
                 queue.clear();
+            }
+
+            @Override
+            public void push(Object element) {
+                queue.push(element);
+            }
+
+            @Override
+            public Object peek() {
+                return queue.peek();
+            }
+
+            @Override
+            public Object remove() {
+                return queue.remove();
+            }
+
+            @Override
+            public Object[] toArray() {
+                return queue.toArray();
             }
         };
     }

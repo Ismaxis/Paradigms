@@ -59,6 +59,59 @@ public class ArrayQueueModule {
         return result;
     }
 
+    // Pre: element != null
+    // Post: n' = n + 1 &&
+    //       a[1] = element &&
+    //       for i in [1; n]:
+    //          a'[i + 1] = a[i]
+    public static void push(Object element) {
+        Objects.requireNonNull(element);
+        ensureCapacity(size + 1);
+
+        head = (elements.length + head - 1) % elements.length;
+        elements[head] = element;
+        size++;
+    }
+
+    // Pre: n >= 1;
+    // Post: n' = n &&
+    //       immutable(n) &&
+    //       R = a[n]
+    public static Object peek() {
+        assert size >= 1;
+
+        return elements[(head + size - 1) % elements.length];
+    }
+
+    // Pre: n >= 1;
+    // Post: n' = n - 1 &&
+    //       immutable(n - 1) &&
+    //       R = a[n]
+    public static Object remove() {
+        assert size >= 1;
+
+        int tail = (head + size - 1) % elements.length;
+        Object result = elements[tail];
+        elements[tail] = null;
+        size--;
+        return result;
+    }
+
+    // Pre: true
+    // Post: n' = n &&
+    //       immutable(n) &&
+    //       R = b:
+    //       for i in [1; n]:
+    //           b[i] = a[i]
+    public static Object[] toArray() {
+        Object[] result = new Object[size];
+        for (int i = 0; i < size; i++) {
+            result[i] = elements[(head + i) % elements.length];
+        }
+
+        return result;
+    }
+
     // Pre: true
     // Post: n' = n &&
     //       immutable(n) &&
@@ -85,7 +138,7 @@ public class ArrayQueueModule {
 
     private static void ensureCapacity(int capacity) {
         if (capacity > elements.length) {
-            Object[] newArr = Arrays.copyOf(elements, Math.max(elements.length * 2, capacity));
+            Object[] newArr = new Object[Math.max(elements.length * 2, capacity)];
             for (int i = 0; i < size; i++) {
                 newArr[i] = elements[(head + i) % elements.length];
             }
