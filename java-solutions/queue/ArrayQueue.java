@@ -1,6 +1,5 @@
 package queue;
 
-
 import java.util.Objects;
 
 /*
@@ -30,7 +29,7 @@ public class ArrayQueue {
     // Pre: element != null
     // Post: n' = n + 1 &&
     //       a[n'] = element &&
-    //       immutable(this, this.n)
+    //       immutable(this, n)
     public void enqueue(Object element) {
         Objects.requireNonNull(element);
         ensureCapacity(size + 1);
@@ -39,21 +38,21 @@ public class ArrayQueue {
         size++;
     }
 
-    // Pre: this.n >= 1
-    // Post: R = this.a[1] &&
-    //           this.n' = this.n &&
-    //           immutable(queue, this.n)
+    // Pre: n >= 1
+    // Post: R = a[1] &&
+    //           n' = n &&
+    //           immutable(this, n)
     public Object element() {
         assert size >= 1;
 
         return elements[head];
     }
 
-    // Pre: this.n >= 1
-    // Post: R = this.a[1] &&
-    //           this.n' = this.n - 1 &&
-    //           for i in [1; this.n']:
-    //              this.a'[i] = this.a[i + 1]
+    // Pre: n >= 1
+    // Post: R = a[1] &&
+    //           n' = n - 1 &&
+    //           for i in [1; n']:
+    //              a'[i] = a[i + 1]
     public Object dequeue() {
         assert size >= 1;
 
@@ -65,10 +64,10 @@ public class ArrayQueue {
     }
 
     // Pre: element != null
-    // Post: this.n' = this.n + 1 &&
-    //       this.a[1] = element &&
-    //       for i in [1; this.n]:
-    //          this.a'[i + 1] = this.a[i]
+    // Post: n' = n + 1 &&
+    //       a[1] = element &&
+    //       for i in [1; n]:
+    //          a'[i + 1] = a[i]
     public void push(Object element) {
         Objects.requireNonNull(element);
         ensureCapacity(size + 1);
@@ -78,18 +77,18 @@ public class ArrayQueue {
         size++;
     }
 
-    // Pre: this.n >= 1;
-    // Post: this.n' = this.n &&
-    //       immutable(this, this.n) &&
-    //       R = this.a[this.n]
+    // Pre: n >= 1;
+    // Post: n' = n &&
+    //       immutable(this, n) &&
+    //       R = a[n]
     public Object peek() {
         assert size >= 1;
 
         return elements[(head + size - 1) % elements.length];
     }
 
-    // Pre: this.n >= 1;
-    // Post: this.n' = this.n - 1 &&
+    // Pre: n >= 1;
+    // Post: n' = n - 1 &&
     //       immutable(n - 1) &&
     //       R = a[n]
     public Object remove() {
@@ -103,11 +102,11 @@ public class ArrayQueue {
     }
 
     // Pre: true
-    // Post: this.n' = this.n &&
-    //       immutable(this, this.n) &&
+    // Post: n' = n &&
+    //       immutable(this, n) &&
     //       R = b:
-    //       for i in [1; this.n]:
-    //           b[i] = this.a[i]
+    //       for i in [1; n]:
+    //           b[i] = a[i]
     public Object[] toArray() {
         // :NOTE: handmade :FIXED:
         return copyOfElements(size);
@@ -115,23 +114,23 @@ public class ArrayQueue {
 
 
     // Pre: true
-    // Post: this.n' = this.n &&
-    //       immutable(this, this.n) &&
-    //       R = this.n
+    // Post: n' = n &&
+    //       immutable(this, n) &&
+    //       R = n
     public int size() {
         return size;
     }
 
     // Pre: true
-    // Post: this.n' = this.n &&
-    //       immutable(this, this.n) &&
-    //       R = (this.n == 0)
+    // Post: n' = n &&
+    //       immutable(this, n) &&
+    //       R = (n == 0)
     public boolean isEmpty() {
         return size() == 0;
     }
 
     // Pre: true
-    // Post: this.n' = 0
+    // Post: n' = 0
     public void clear() {
         elements = new Object[INITIAL_SIZE];
         size = 0;
