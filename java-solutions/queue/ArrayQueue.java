@@ -1,7 +1,6 @@
 package queue;
 
 
-import java.util.Arrays;
 import java.util.Objects;
 
 /*
@@ -29,8 +28,8 @@ public class ArrayQueue {
     }
 
     // Pre: element != null
-    // Post: this.n' = this.n + 1 &&
-    //       this.a[this.n'] = element &&
+    // Post: n' = n + 1 &&
+    //       a[n'] = element &&
     //       immutable(this, this.n)
     public void enqueue(Object element) {
         Objects.requireNonNull(element);
@@ -111,6 +110,7 @@ public class ArrayQueue {
     //           b[i] = this.a[i]
     public Object[] toArray() {
         Object[] result = new Object[size];
+        // :NOTE: handmade
         for (int i = 0; i < size; i++) {
             result[i] = elements[(head + i) % elements.length];
         }
@@ -146,6 +146,7 @@ public class ArrayQueue {
     private void ensureCapacity(int capacity) {
         if (capacity > elements.length) {
             Object[] newArr = new Object[Math.max(elements.length * 2, capacity)];
+            // :NOTE: handmade
             for (int i = 0; i < size; i++) {
                 newArr[i] = elements[(head + i) % elements.length];
             }
