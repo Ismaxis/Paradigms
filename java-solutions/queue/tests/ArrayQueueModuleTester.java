@@ -6,47 +6,52 @@ public class ArrayQueueModuleTester extends ArrayQueueTester {
     @Override
     public void test() {
         Printer.println("-- Module Test --");
-        Printer.incTab(2);
+        Printer.incTab();
+        Printer.println("Tested:");
+        Printer.incTab();
 
         QueueFunctions qf = functionsForModuleQueue();
         testClear(qf);
-        Printer.println("Tested: clear()");
+        Printer.println("clear()");
 
         ArrayQueueModule.clear();
-        testEmpty(qf);
-        Printer.println("Tested: isEmpty()");
+        testEnqueue(qf);
+        Printer.println("enqueue(Object)");
+
+        ArrayQueueModule.clear();
+        testDequeue(qf);
+        Printer.println("dequeue()");
+
+        ArrayQueueModule.clear();
+        testElement(qf);
+        Printer.println("element()");
 
         ArrayQueueModule.clear();
         testSize(qf);
-        Printer.println("Tested: size()");
+        Printer.println("size()");
 
         ArrayQueueModule.clear();
-        testSingleton(qf);
-        
-        testOrder(qf);
-        Printer.println("Tested: First In First Out");
+        testEmpty(qf);
+        Printer.println("isEmpty()");
 
         ArrayQueueModule.clear();
-        testOrderRandom(qf);
-        Printer.println("Tested: Random Inputs");
+        testPush(qf);
+        Printer.println("push(Object)");
 
         ArrayQueueModule.clear();
-        testOrderRandomDeque(qf);
-        Printer.println("Tested: Random Inputs DequeToArray");
+        testRemove(qf);
+        Printer.println("remove()");
 
-        Printer.println("Some enqueues and dequeues:");
-        Printer.incTab();
+        ArrayQueueModule.clear();
+        testPeek(qf);
+        Printer.println("peek()");
 
-        fillModule(3);
-        dumpModule();
-        fillModule(10);
-        dumpModule(5);
-        fillModule(5);
-        dumpModule();
+        ArrayQueueModule.clear();
+        testToArray(qf);
+        Printer.println("toArray()");
 
-        Printer.decTab(3);
+        Printer.decTab(2);
     }
-
     private static QueueFunctions functionsForModuleQueue() {
         return new QueueFunctions() {
             @Override
@@ -99,14 +104,5 @@ public class ArrayQueueModuleTester extends ArrayQueueTester {
                 return ArrayQueueModule.toArray();
             }
         };
-    }
-    private static void fillModule(int count) {
-        fill(functionsForModuleQueue(), count);
-    }
-    private static void dumpModule() {
-        dump(functionsForModuleQueue());
-    }
-    private static void dumpModule(int count) {
-        dump(functionsForModuleQueue(), count);
     }
 }

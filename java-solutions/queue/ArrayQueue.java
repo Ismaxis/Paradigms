@@ -9,9 +9,9 @@ Inv:
     n >= 0 &&
     for i in [1; n]:
         a[i] != null
-Let immutable(queue, n):
+Let immutable(n):
     for i in [1; n]:
-       queue.a'[i] = queue.a[i]
+       a'[i] = a[i]
  */
 
 public class ArrayQueue {
@@ -29,7 +29,7 @@ public class ArrayQueue {
     // Pre: element != null
     // Post: n' = n + 1 &&
     //       a[n'] = element &&
-    //       immutable(this, n)
+    //       immutable(n)
     public void enqueue(Object element) {
         Objects.requireNonNull(element);
         ensureCapacity(size + 1);
@@ -41,7 +41,7 @@ public class ArrayQueue {
     // Pre: n >= 1
     // Post: R = a[1] &&
     //           n' = n &&
-    //           immutable(this, n)
+    //           immutable(n)
     public Object element() {
         assert size >= 1;
 
@@ -79,7 +79,7 @@ public class ArrayQueue {
 
     // Pre: n >= 1;
     // Post: n' = n &&
-    //       immutable(this, n) &&
+    //       immutable(n) &&
     //       R = a[n]
     public Object peek() {
         assert size >= 1;
@@ -103,7 +103,7 @@ public class ArrayQueue {
 
     // Pre: true
     // Post: n' = n &&
-    //       immutable(this, n) &&
+    //       immutable(n) &&
     //       R = b:
     //       for i in [1; n]:
     //           b[i] = a[i]
@@ -115,7 +115,7 @@ public class ArrayQueue {
 
     // Pre: true
     // Post: n' = n &&
-    //       immutable(this, n) &&
+    //       immutable(n) &&
     //       R = n
     public int size() {
         return size;
@@ -123,7 +123,7 @@ public class ArrayQueue {
 
     // Pre: true
     // Post: n' = n &&
-    //       immutable(this, n) &&
+    //       immutable(n) &&
     //       R = (n == 0)
     public boolean isEmpty() {
         return size() == 0;

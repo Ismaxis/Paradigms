@@ -7,61 +7,41 @@ public class ArrayQueueClassTester extends ArrayQueueTester {
     public void test() {
         Printer.println("-- Class Test --");
         Printer.incTab();
-
-        ArrayQueue queue = new ArrayQueue();
-        testEmpty(functionsForClassQueue(queue));
-        Printer.println("Tested: isEmpty()");
-
-        queue = new ArrayQueue();
-        testSize(functionsForClassQueue(queue));
-        Printer.println("Tested: size()");
-
-        queue = new ArrayQueue();
-        testSingleton(functionsForClassQueue(queue));
-
-        queue = new ArrayQueue();
-        testClear(functionsForClassQueue(queue));
-        Printer.println("Tested: clear()");
-
-        queue = new ArrayQueue();
-        testOrder(functionsForClassQueue(queue));
-        Printer.println("Tested: First In First Out");
-
-        queue = new ArrayQueue();
-        testOrderRandom(functionsForClassQueue(queue));
-        Printer.println("Tested: Random Inputs");
-
-        queue = new ArrayQueue();
-        testOrderRandomDeque(functionsForClassQueue(queue));
-        Printer.println("Tested: Random Inputs DequeToArray");
-
-        Printer.println("Some enqueues and dequeues:");
-        Printer.incTab();
-        int curIndent = Printer.getIndent();
+        Printer.println("Tested:");
         Printer.incTab();
 
-        ArrayQueue queue1 = new ArrayQueue();
-        ArrayQueue queue2 = new ArrayQueue();
-        Printer.println("q1:", curIndent);
-        fillClass(queue1, 3);
-        Printer.println("q2:", curIndent);
-        fillClass(queue2, 3);
-        Printer.println("q1:", curIndent);
-        dumpClass(queue1);
-        Printer.println("q1:", curIndent);
-        fillClass(queue1, 10);
-        Printer.println("q1:", curIndent);
-        dumpClass(queue1, 5);
-        Printer.println("q1:", curIndent);
-        fillClass(queue1, 5);
-        Printer.println("q1:", curIndent);
-        dumpClass(queue1);
-        Printer.println("q2:", curIndent);
-        dumpClass(queue2);
+        testClear(functionsForClassQueue(new ArrayQueue()));
+        Printer.println("clear()");
 
-        Printer.decTab(3);
+        testEnqueue(functionsForClassQueue(new ArrayQueue()));
+        Printer.println("enqueue(Object)");
+
+        testDequeue(functionsForClassQueue(new ArrayQueue()));
+        Printer.println("dequeue()");
+
+        testElement(functionsForClassQueue(new ArrayQueue()));
+        Printer.println("element()");
+
+        testSize(functionsForClassQueue(new ArrayQueue()));
+        Printer.println("size()");
+
+        testEmpty(functionsForClassQueue(new ArrayQueue()));
+        Printer.println("isEmpty()");
+
+        testPush(functionsForClassQueue(new ArrayQueue()));
+        Printer.println("push(Object)");
+
+        testRemove(functionsForClassQueue(new ArrayQueue()));
+        Printer.println("remove()");
+
+        testPeek(functionsForClassQueue(new ArrayQueue()));
+        Printer.println("peek()");
+
+        testToArray(functionsForClassQueue(new ArrayQueue()));
+        Printer.println("toArray()");
+
+        Printer.decTab();
     }
-
     private static QueueFunctions functionsForClassQueue(ArrayQueue queue) {
         return new QueueFunctions() {
             @Override
@@ -114,14 +94,5 @@ public class ArrayQueueClassTester extends ArrayQueueTester {
                 return queue.toArray();
             }
         };
-    }
-    private static void fillClass(ArrayQueue queue, int count) {
-        fill(functionsForClassQueue(queue), count);
-    }
-    private static void dumpClass(ArrayQueue queue) {
-        dump(functionsForClassQueue(queue));
-    }
-    private static void dumpClass(ArrayQueue queue, int count) {
-        dump(functionsForClassQueue(queue), count);
     }
 }
