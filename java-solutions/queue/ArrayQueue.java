@@ -15,7 +15,7 @@ Let immutable(n):
  */
 
 public class ArrayQueue {
-    private static final int INITIAL_SIZE = 5;
+    private static final int INITIAL_SIZE = 10;
     private int size;
     private int head;
     private Object[] elements;
@@ -50,9 +50,9 @@ public class ArrayQueue {
 
     // Pre: n >= 1
     // Post: R = a[1] &&
-    //           n' = n - 1 &&
-    //           for i in [1; n']:
-    //              a'[i] = a[i + 1]
+    //       n' = n - 1 &&
+    //       for i in [1; n']:
+    //           a'[i] = a[i + 1]
     public Object dequeue() {
         assert size >= 1;
 
@@ -67,7 +67,7 @@ public class ArrayQueue {
     // Post: n' = n + 1 &&
     //       a[1] = element &&
     //       for i in [1; n]:
-    //          a'[i + 1] = a[i]
+    //           a'[i + 1] = a[i]
     public void push(Object element) {
         Objects.requireNonNull(element);
         ensureCapacity(size + 1);
@@ -139,7 +139,7 @@ public class ArrayQueue {
 
     private void ensureCapacity(int capacity) {
         if (capacity > elements.length) {
-            // :NOTE: handmade :FIXED:X
+            // :NOTE: handmade :FIXED:
             elements = copyOfElements(Math.max(elements.length * 2, capacity));
             head = 0;
         }

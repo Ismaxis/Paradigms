@@ -15,7 +15,7 @@ Let immutable(queue, n):
  */
 
 public class ArrayQueueADT {
-    private static final int INITIAL_SIZE = 5;
+    private static final int INITIAL_SIZE = 10;
     private int size;
     private int head;
     private Object[] elements;
