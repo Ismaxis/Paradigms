@@ -133,4 +133,49 @@ public class ArrayQueue extends AbstractQueue {
         }
         return newArr;
     }
+
+    @Override
+    protected QueueIterator getIterator() {
+        return new ArrayQueueIterator(this);
+    }
+    protected static class ArrayQueueIterator implements QueueIterator {
+        ArrayQueue queue;
+        int i;
+        boolean isEnd = false;
+        public ArrayQueueIterator(ArrayQueue queue) {
+            this.queue = queue;
+            this.i = queue.head;
+        }
+
+        @Override
+        public Object getElement() {
+            return queue.elements[i];
+        }
+
+        @Override
+        public Object getNext() {
+            return null;
+        }
+
+        @Override
+        public void inc() {
+            i = (i + 1) % queue.elements.length;
+            if (i == (queue.head + queue.size) % queue.elements.length) {
+                isEnd = true;
+            }
+        }
+
+        @Override
+        public boolean isEnd() {
+            return isEnd;
+        }
+
+        @Override
+        public void removeCur() {
+            final int length = queue.elements.length;
+            for (int j = i; j != (queue.size + queue.head) % length; j = (j + 1) % length) {
+                queue.elements[j] = queue.elements[(j + 1) % length];
+            }
+        }
+    }
 }

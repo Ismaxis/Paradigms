@@ -51,4 +51,8 @@ public interface Queue {
     // Pre: true
     // Post: n' = 0
     void clear();
+
+    boolean contains(Object element);
+
+    boolean removeFirstOccurrence(Object element);
 }
