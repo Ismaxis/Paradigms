@@ -18,10 +18,7 @@ public class ArrayQueueADT {
     private static final int INITIAL_SIZE = 10;
     private int size;
     private int head;
-    private Object[] elements;
-    {
-        elements = new Object[INITIAL_SIZE];
-    }
+    private Object[] elements = new Object[INITIAL_SIZE];
 
     public static ArrayQueueADT create() {
         ArrayQueueADT queue = new ArrayQueueADT();
@@ -115,6 +112,7 @@ public class ArrayQueueADT {
     //       for i in [1; queue.n]:
     //           b[i] = queue.a[i]
     public static Object[] toArray(ArrayQueueADT queue) {
+        // :NOTE: handmade
         Object[] result = new Object[queue.size];
         for (int i = 0; i < queue.size; i++) {
             result[i] = queue.elements[(queue.head + i) % queue.elements.length];

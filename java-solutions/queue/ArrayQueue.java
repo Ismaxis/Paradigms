@@ -123,11 +123,11 @@ public class ArrayQueue extends AbstractQueue {
     }
 
     private Object[] copyOfElements(int capacity) {
-        Object[] newArr = new Object[capacity];
+        final Object[] newArr = new Object[capacity];
         if (head + size <= elements.length) {
             System.arraycopy(elements, head, newArr, 0, size);
         } else {
-            int lengthOfLeftPart = elements.length - head;
+            final int lengthOfLeftPart = elements.length - head;
             System.arraycopy(elements, head, newArr, 0, lengthOfLeftPart);
             System.arraycopy(elements, 0, newArr, lengthOfLeftPart, size - lengthOfLeftPart);
         }
