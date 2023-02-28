@@ -3,6 +3,7 @@ package queue.tests;
 import queue.ArrayQueueADT;
 
 public class ArrayQueueADTTester extends ArrayQueueTester {
+
     @Override
     public void test() {
         Printer.println("-- ADT Test --");
