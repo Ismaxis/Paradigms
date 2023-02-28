@@ -1,272 +1,206 @@
 package queue.tests;
 
-import java.util.ArrayDeque;
-import java.util.Random;
+import java.util.Objects;
 
 abstract public class ArrayQueueTester {
     abstract public void test();
-
-    protected static TestFailedException error(String message) {
-        return new TestFailedException(message);
+    protected static ContractFailure error(String methodName) {
+        return new ContractFailure(methodName);
+    }
+    protected static ContractFailure error(String methodName, String description) {
+        return new ContractFailure(methodName, description);
     }
 
-    public void testEmpty(QueueFunctions queueFunctions) {
-        if (!queueFunctions.isEmpty()) {
-            throw error("Queue is not empty initially");
-        }
+    public void testEnqueue(QueueFunctions qf) {
+        Object[] elements = {1, "abacaba", 5.5};
 
-        int elementsAdded = 3;
-        for (int i = 0; i < elementsAdded; i++) {
-            queueFunctions.enqueue(100 * i);
-        }
-        if (queueFunctions.isEmpty()) {
-            throw error("Queue is empty after filled");
-        }
+        int expectedSize = qf.size() + 1;
+        qf.enqueue(elements[0]);
 
-        for (int i = 0; i < elementsAdded - 1; i++) {
-            queueFunctions.dequeue();
-        }
-        if (queueFunctions.isEmpty()) {
-            throw error("Queue is empty after partial dump");
-        }
+        compare(qf.size(), expectedSize,"enqueue(Object)", "n' = n + 1");
+        qf.clear();
 
-        queueFunctions.dequeue();
-        if (!queueFunctions.isEmpty()) {
-            throw error("Queue is not empty after full dump");
-        }
+        fillQueue(qf, elements);
+        qf.enqueue("Test last element, that shouldn't be dequeued");
+
+        checkImmutable(elements, qf, "enqueue(Object)", "immutable(n)");
     }
-    public void testSize(QueueFunctions queueFunctions) {
-        if (queueFunctions.size() != 0) {
-            throw error("Queue size is not zero initially");
-        }
-
-        int maxSize = 100;
-        for (int i = 0; i < maxSize; i++) {
-            queueFunctions.enqueue(100 * i);
-            if (queueFunctions.size() != i + 1) {
-                throw error("Queue size is incorrect after enqueue");
-            }
-        }
-
-        for (int i = 0; i < maxSize - 1; i++) {
-            queueFunctions.dequeue();
-            if (queueFunctions.size() != maxSize - i - 1) {
-                throw error("Queue size is incorrect after dequeue");
-            }
-        }
-        if (queueFunctions.size() != 1) {
-            throw error("Queue size is incorrect after partial dump");
-        }
-
-        queueFunctions.dequeue();
-        if (queueFunctions.size() != 0) {
-            throw error("Queue size is not zero after full dump");
-        }
-    }
-    public void testSingleton(QueueFunctions queueFunctions) {
-        queueFunctions.enqueue(0);
-        Object head1 = queueFunctions.element();
-        Object head2 = queueFunctions.element();
-        if (head1 != head2) {
-            throw error("Two head elements are not the same");
-        }
-
-        queueFunctions.enqueue(1);
-
-        head2 = queueFunctions.dequeue();
-        if (head1 != head2) {
-            throw error("Two head elements are not the same after enqueue");
-        }
-
-        head2 = queueFunctions.dequeue();
-        if (head1 == head2) {
-            throw error("Two head elements are same after dequeue");
-        }
-    }
-    public void testClear(QueueFunctions queueFunctions) {
+    public void testClear(QueueFunctions qf) {
         for (int i = 0; i < 5; i++) {
-            queueFunctions.enqueue(2 * i);
+            qf.enqueue(2 * i);
         }
-        queueFunctions.clear();
-        if (!queueFunctions.isEmpty()) {
-            throw error("Queue is not empty after clear");
-        }
-        if (queueFunctions.size() != 0) {
-            throw error("Queue size is not zero after clear");
-        }
+        qf.clear();
+        compare(qf.size(), 0, "clear()", "n' = 0");
 
         Integer testElem = 88;
-        queueFunctions.enqueue(testElem);
-        Object head = queueFunctions.dequeue();
-        if (head != testElem) {
-            throw error("Queue contains elements after clear. Expected: '" + testElem + "', found: '" + head + "'");
-        }
+        qf.enqueue(testElem);
+        Object head = qf.dequeue();
+        compare(head, testElem, "clear()","Queue contains elements after clear");
     }
-    public void testOrder(QueueFunctions queueFunctions) {
-        Integer[] array = {25, 67, 20, 10};
-        for (int i = 0; i < array.length; i++) {
-            queueFunctions.enqueue(array[i]);
-        }
-        for (int i = 0; i < array.length; i++) {
-            Object head =  queueFunctions.dequeue();
-            if (array[i] != head) {
-                throw error("Wrong order: Expected: '" + array[i] + "', found: '" + head + "'" );
-            }
-        }
-    }
-    public void testOrderRandom(QueueFunctions queueFunctions) {
-        ArrayDeque<Integer> reference = new ArrayDeque<>();
-        int iterations = 10000000;
-        Random random = new Random();
-        for (int i = 0; i < iterations; i++) {
-            int op = random.nextInt() % 5;
-            if (op == 0) {
-                int newElem = random.nextInt();
-                queueFunctions.enqueue(newElem);
-                reference.add(newElem);
-            } else if (op == 1) {
-                if (reference.isEmpty()) {
-                    continue;
-                }
-                Object testDeq = queueFunctions.dequeue();
-                Integer referenceDeq = reference.poll();
-                if (testDeq instanceof Integer integer && referenceDeq != null) {
-                    if (integer != referenceDeq.intValue()) {
-                        throw error("Wrong order: Expected: '" + referenceDeq + "', found: '" + testDeq + "'" );
-                    }
-                } else {
-                    throw error("Wrong type: Expected: " + (referenceDeq == null ? "null" : referenceDeq.getClass()) +
-                            ", found: " + (testDeq == null ? "null" : testDeq.getClass()));
-                }
-            } else if (op == 2) {
-                if (queueFunctions.isEmpty() != reference.isEmpty()) {
-                    if (reference.isEmpty()) {
-                        throw error("Queue is not empty, but should");
-                    } else {
-                        throw error("Queue is empty, but should not");
-                    }
-                }
-            } else if (op == 3) {
-                int testSize = queueFunctions.size();
-                int referenceSize = reference.size();
-                if (testSize != referenceSize) {
-                    throw error("Queue has incorrect size: Expected: " + referenceSize + ", found: " + testSize);
-                }
-            } else if (op == 4) {
-                queueFunctions.clear();
-                reference.clear();
-            }
-        }
-    }
-    public void testOrderRandomDeque(QueueFunctions queueFunctions) {
-        ArrayDeque<Integer> reference = new ArrayDeque<>();
-        int iterations = 10000000;
-        Random random = new Random();
-        for (int i = 0; i < iterations; i++) {
-            int op = random.nextInt() % 10;
-            if (op == 0) {
-                int newElem = random.nextInt();
-                queueFunctions.enqueue(newElem);
-                reference.add(newElem);
-            } else if (op == 1) {
-                if (reference.isEmpty()) {
-                    continue;
-                }
-                Object testDeq = queueFunctions.dequeue();
-                Integer referenceDeq = reference.poll();
-                compare(testDeq, referenceDeq);
-            } else if (op == 2) {
-                if (queueFunctions.isEmpty() != reference.isEmpty()) {
-                    if (reference.isEmpty()) {
-                        throw error("Queue is not empty, but should");
-                    } else {
-                        throw error("Queue is empty, but should not");
-                    }
-                }
-            } else if (op == 3) {
-                int testSize = queueFunctions.size();
-                int referenceSize = reference.size();
-                if (testSize != referenceSize) {
-                    throw error("Queue has incorrect size: Expected: " + referenceSize + ", found: " + testSize);
-                }
-            } else if (op == 4) {
-                queueFunctions.clear();
-                reference.clear();
-            } else if (op == 5) {
-                int newElem = random.nextInt();
-                queueFunctions.push(newElem);
-                reference.push(newElem);
-            } else if (op == 6) {
-                if (reference.isEmpty()) {
-                    continue;
-                }
-                Object testDeq = queueFunctions.remove();
-                Integer referenceDeq = reference.removeLast();
-                compare(testDeq, referenceDeq);
-            } else if (op == 7) {
-                if (reference.isEmpty()) {
-                    continue;
-                }
-                Object testDeq = queueFunctions.peek();
-                Integer referenceDeq = reference.getLast();
-                compare(testDeq, referenceDeq);
-            } else if (op == 8) {
-                if (reference.isEmpty()) {
-                    continue;
-                }
-                Object testDeq = queueFunctions.element();
-                Integer referenceDeq = reference.element();
-                compare(testDeq, referenceDeq);
-            } else if (op == 9) {
-                Object[] testArr = queueFunctions.toArray();
-                Object[] referenceArr = reference.toArray();
-                if (testArr.length != referenceArr.length) {
-                    throw  error("Array has wrong length: Expected: " + referenceArr.length + ", found: " + testArr.length);
-                }
+    public void testDequeue(QueueFunctions qf) {
+        Object[] elements = {"acabaca", 2.7, 100, "___"};
 
-                for (int j = 0; j < referenceArr.length; j++) {
-                    compare(testArr[j], (Integer) referenceArr[j]);
-                }
+        qf.enqueue(elements[0]);
+        int expectedSize = qf.size() - 1;
+        qf.dequeue();
 
-            }
-        }
-    }
+        compare(qf.size(), expectedSize,"dequeue()", "n' = n - 1");
 
-    private static void compare(Object testDeq, Integer referenceDeq) {
-        if (testDeq instanceof Integer integer && referenceDeq != null) {
-            if (integer != referenceDeq.intValue()) {
-                throw error("Wrong order: Expected: '" + referenceDeq + "', found: '" + testDeq + "'" );
-            }
-        } else {
-            throw error("Wrong type: Expected: " + (referenceDeq == null ? "null" : referenceDeq.getClass()) +
-                    ", found: " + (testDeq == null ? "null" : testDeq.getClass()));
-        }
-    }
+        String head = "First element to be dequeued";
+        String head2 = "Second element to be dequeued";
+        qf.enqueue(head);
+        qf.enqueue(head2);
+        fillQueue(qf, elements);
 
-    protected static void fill(QueueFunctions queueFunctions, int count) {
-        for (int i = 0; i < count; i++) {
-            queueFunctions.enqueue(i);
-        }
-        Printer.println(count + " elements added");
+        compare(qf.dequeue(), head, "dequeue()", "R = a[1]");
+        compare(qf.dequeue(), head2, "dequeue()", "a'[1] = a[2]");
+
+        checkImmutable(elements, qf, "dequeue()", "for i in [1; n']: a'[i] = a[i + 1]");
     }
-    protected static void dump(QueueFunctions queueFunctions) {
-        Printer.println("Dump all:");
-        Printer.incTab();
-        while(!queueFunctions.isEmpty()) {
-            printQueueState(queueFunctions.size(), queueFunctions.element(), queueFunctions.dequeue());
-        }
-        Printer.decTab();
+    public void testElement(QueueFunctions qf) {
+        Object[] elements = {3.14, "^_^", 200, "(#_#)"};
+
+        qf.enqueue(elements[0]);
+        int expectedSize = qf.size();
+        qf.element();
+
+        compare(qf.size(), expectedSize,"element()", "n' = n");
+        qf.clear();
+
+        String head = "Element to be dequeued";
+        qf.enqueue(head);
+        fillQueue(qf, elements);
+
+        compare(qf.element(), head, "element()", "R = a[1]");
+        qf.dequeue();
+
+        checkImmutable(elements, qf, "element()", "immutable(n)");
     }
-    protected static void dump(QueueFunctions queueFunctions, int count) {
-        Printer.printf("Dump %d:\n", count);
-        Printer.incTab();
-        for (int i = 0; i < count; i++) {
-            printQueueState(queueFunctions.size(), queueFunctions.element(), queueFunctions.dequeue());
+    public void testSize(QueueFunctions qf) {
+        compare(qf.size(), 0, "size()", "Initial size should be 0");
+        Object[] elements = {"/_/", "--_--", 1020, 0};
+
+        qf.enqueue(elements[0]);
+        int expectedSize = qf.size();
+        qf.size();
+
+        compare(qf.size(), expectedSize,"size()", "n' = n");
+        qf.clear();
+
+        fillQueue(qf, elements);
+
+        expectedSize = qf.size();
+        // Immutable check
+        for (Object element : elements) {
+            compare(qf.dequeue(), element, "size()","immutable(n)");
+            compare(qf.size(), --expectedSize, "size()","R = n");
         }
-        Printer.decTab();
     }
-    protected static void printQueueState(int size, Object element, Object dequeued) {
-        Printer.println(
-                "size: " + size + "  \telement: " + element + "  \tdequeued: " + dequeued);
+    public void testEmpty(QueueFunctions qf) {
+        Object[] elements = {"-_-", 202, "(@_@)", 1000};
+
+        qf.enqueue(elements[0]);
+        int expectedSize = qf.size();
+        qf.isEmpty();
+
+        // Size check
+        compare(qf.size(), expectedSize,"isEmpty()", "n' = n");
+        qf.clear();
+
+        fillQueue(qf, elements);
+        qf.isEmpty();
+
+        // Immutable check
+        for (Object element : elements) {
+            compare(qf.dequeue(), element, "isEmpty()","immutable(n)");
+            compare(qf.isEmpty(), qf.size() == 0, "isEmpty()","R = (n == 0)");
+        }
+    }
+    public void testPush(QueueFunctions qf) {
+        Object[] elements = {"abba", 36.6, 12301823};
+        Object[] elementsWithFirst = {"Test first element, that should be added",
+                                    "abba", 36.6, 12301823};
+
+        int expectedSize = qf.size() + 1;
+        qf.push(elements[0]);
+
+        compare(qf.size(), expectedSize,"push(Object)", "n' = n + 1");
+        qf.clear();
+
+        fillQueue(qf, elements);
+        qf.push(elementsWithFirst[0]);
+
+        checkImmutable(elementsWithFirst, qf, "push(Object)", "a[1] = element && for i in [1; n]: a'[i + 1] = a[i]");
+    }
+    public void testRemove(QueueFunctions qf) {
+        Object[] elements = {"abba", 36.6, 12301823};
+        Object[] elementsWithLast = {"abba", 36.6, 12301823,
+                "Test last element, that should be removed"};
+
+        qf.enqueue(elements[0]);
+        int expectedSize = qf.size() - 1;
+        qf.remove();
+
+        compare(qf.size(), expectedSize,"remove()", "n' = n - 1");
+
+        fillQueue(qf, elementsWithLast);
+
+        compare(qf.remove(), elementsWithLast[elementsWithLast.length - 1], "remove()", "R = a[n]");
+
+        checkImmutable(elements, qf, "remove()", "immutable(n - 1)]");
+    }
+    public void testPeek(QueueFunctions qf) {
+        Object[] elements = {3.14, "^_^", 200, "(#_#)"};
+
+        qf.enqueue(elements[0]);
+        int expectedSize = qf.size();
+        qf.element();
+
+        compare(qf.size(), expectedSize,"peek()", "n' = n");
+        qf.clear();
+
+        fillQueue(qf, elements);
+        String tail = "Element to be dequeued";
+        qf.enqueue(tail);
+
+        compare(qf.peek(), tail, "peek()", "R = a[n]");
+        qf.remove();
+
+        checkImmutable(elements, qf, "peek()", "immutable(n)");
+    }
+    public void testToArray(QueueFunctions qf) {
+        Object[] elements = {"abba", 36.6, 12301823, "-_-", 202, "(@_@)", 1000};
+        fillQueue(qf, elements);
+
+        int expectedSize = qf.size();
+        Object[] elementsFromToArray = qf.toArray();
+
+        compare(qf.size(), expectedSize, "toArray()", "n' = n");
+
+        if (elements.length != elementsFromToArray.length) {
+            throw error("toArray()",
+                    "Wrong length. Expected: " + elements.length + ", found: " + elementsFromToArray.length);
+        }
+        for (int i = 0; i < elements.length; i++) {
+            compare(elementsFromToArray[i], elements[i], "toArray()", "b[i] = a[i]");
+        }
+
+        checkImmutable(elements, qf, "toArray()", "immutable(n)");
+    }
+    private static void fillQueue(QueueFunctions qf, Object[] elements) {
+        for (Object element : elements) {
+            qf.enqueue(element);
+        }
+    }
+    private static void checkImmutable(Object[] elements, QueueFunctions qf, String methodName, String partOfContract) {
+        for (Object element : elements) {
+            compare(qf.dequeue(), element, methodName,
+                    partOfContract);
+        }
+    }
+    private static void compare(Object found, Object expected, String methodName, String partOfContract) {
+        if (!Objects.equals(expected, found)) {
+            throw error(methodName, partOfContract + " \nExpected: " + expected + ", found: " + found);
+        }
     }
 }

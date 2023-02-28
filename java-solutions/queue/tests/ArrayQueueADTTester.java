@@ -7,61 +7,41 @@ public class ArrayQueueADTTester extends ArrayQueueTester {
     public void test() {
         Printer.println("-- ADT Test --");
         Printer.incTab();
-
-        ArrayQueueADT queue = ArrayQueueADT.create();
-        testEmpty(functionsForADTQueue(queue));
-        Printer.println("Tested: isEmpty()");
-
-        queue = ArrayQueueADT.create();
-        testSize(functionsForADTQueue(queue));
-        Printer.println("Tested: size()");
-
-        queue = ArrayQueueADT.create();
-        testSingleton(functionsForADTQueue(queue));
-
-        queue = ArrayQueueADT.create();
-        testClear(functionsForADTQueue(queue));
-        Printer.println("Tested: clear()");
-
-        queue = ArrayQueueADT.create();
-        testOrder(functionsForADTQueue(queue));
-        Printer.println("Tested: First In First Out");
-
-        queue = ArrayQueueADT.create();
-        testOrderRandom(functionsForADTQueue(queue));
-        Printer.println("Tested: Random Inputs");
-
-        queue = ArrayQueueADT.create();
-        testOrderRandomDeque(functionsForADTQueue(queue));
-        Printer.println("Tested: Random Inputs DequeToArray");
-
-        Printer.println("Some enqueues and dequeues:");
-        Printer.incTab();
-        int curIndent = Printer.getIndent();
+        Printer.println("Tested:");
         Printer.incTab();
 
-        ArrayQueueADT queue1 = ArrayQueueADT.create();
-        ArrayQueueADT queue2 = ArrayQueueADT.create();
-        Printer.println("q1:", curIndent);
-        fillADT(queue1, 3);
-        Printer.println("q2:", curIndent);
-        fillADT(queue2, 3);
-        Printer.println("q1:", curIndent);
-        dumpADT(queue1);
-        Printer.println("q1:", curIndent);
-        fillADT(queue1, 10);
-        Printer.println("q1:", curIndent);
-        dumpADT(queue1, 5);
-        Printer.println("q1:", curIndent);
-        fillADT(queue1, 5);
-        Printer.println("q1:", curIndent);
-        dumpADT(queue1);
-        Printer.println("q2:", curIndent);
-        dumpADT(queue2);
+        testClear(functionsForADTQueue(ArrayQueueADT.create()));
+        Printer.println("clear()");
 
-        Printer.decTab(3);
+        testEnqueue(functionsForADTQueue(ArrayQueueADT.create()));
+        Printer.println("enqueue(Object)");
+
+        testDequeue(functionsForADTQueue(ArrayQueueADT.create()));
+        Printer.println("dequeue()");
+
+        testElement(functionsForADTQueue(ArrayQueueADT.create()));
+        Printer.println("element()");
+
+        testSize(functionsForADTQueue(ArrayQueueADT.create()));
+        Printer.println("size()");
+
+        testEmpty(functionsForADTQueue(ArrayQueueADT.create()));
+        Printer.println("isEmpty()");
+
+        testPush(functionsForADTQueue(ArrayQueueADT.create()));
+        Printer.println("push(Object)");
+
+        testRemove(functionsForADTQueue(ArrayQueueADT.create()));
+        Printer.println("remove()");
+
+        testPeek(functionsForADTQueue(ArrayQueueADT.create()));
+        Printer.println("peek()");
+
+        testToArray(functionsForADTQueue(ArrayQueueADT.create()));
+        Printer.println("toArray()");
+
+        Printer.decTab(2);
     }
-
     private static QueueFunctions functionsForADTQueue(ArrayQueueADT queue) {
         return new QueueFunctions() {
             @Override
@@ -114,14 +94,5 @@ public class ArrayQueueADTTester extends ArrayQueueTester {
                 return ArrayQueueADT.toArray(queue);
             }
         };
-    }
-    private static void fillADT(ArrayQueueADT queue, int count) {
-        fill(functionsForADTQueue(queue), count);
-    }
-    private static void dumpADT(ArrayQueueADT queue) {
-        dump(functionsForADTQueue(queue));
-    }
-    private static void dumpADT(ArrayQueueADT queue, int count) {
-        dump(functionsForADTQueue(queue), count);
     }
 }

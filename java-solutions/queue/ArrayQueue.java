@@ -9,65 +9,67 @@ Inv:
     n >= 0 &&
     for i in [1; n]:
         a[i] != null
-Let immutable(queue, n):
+Let immutable(n):
     for i in [1; n]:
-       queue.a'[i] = queue.a[i]
+       a'[i] = a[i]
  */
 
-public class ArrayQueue {
-    private static final int INITIAL_SIZE = 5;
-    private int size;
+public class ArrayQueue extends AbstractQueue {
+    private static final int INITIAL_SIZE = 10;
     private int head;
     private Object[] elements;
 
     public ArrayQueue() {
+        super();
         elements = new Object[INITIAL_SIZE];
-        size = 0;
         head = 0;
     }
 
     // Pre: element != null
     // Post: n' = n + 1 &&
     //       a[n'] = element &&
-    //       immutable(this, n)
-    public void enqueue(Object element) {
-        Objects.requireNonNull(element);
+    //       immutable(n)
+    @Override
+    protected void enqueueImpl(Object element) {
         ensureCapacity(size + 1);
-
         elements[(head + size) % elements.length] = element;
-        size++;
     }
 
     // Pre: n >= 1
     // Post: R = a[1] &&
     //           n' = n &&
-    //           immutable(this, n)
-    public Object element() {
-        assert size >= 1;
-
+    //           immutable(n)
+    @Override
+    protected Object elementImpl() {
         return elements[head];
     }
 
     // Pre: n >= 1
     // Post: R = a[1] &&
-    //           n' = n - 1 &&
-    //           for i in [1; n']:
-    //              a'[i] = a[i + 1]
-    public Object dequeue() {
-        assert size >= 1;
-
+    //       n' = n - 1 &&
+    //       for i in [1; n']:
+    //           a'[i] = a[i + 1]
+    @Override
+    public Object dequeueImpl() {
         Object result = elements[head];
         elements[head] = null;
-        size--;
         head = (head + 1) % elements.length;
         return result;
+    }
+
+    // Pre: true
+    // Post: n' = 0
+    @Override
+    protected void clearImpl() {
+        head = 0;
+        elements = new Object[INITIAL_SIZE];
     }
 
     // Pre: element != null
     // Post: n' = n + 1 &&
     //       a[1] = element &&
     //       for i in [1; n]:
-    //          a'[i + 1] = a[i]
+    //           a'[i + 1] = a[i]
     public void push(Object element) {
         Objects.requireNonNull(element);
         ensureCapacity(size + 1);
@@ -79,7 +81,7 @@ public class ArrayQueue {
 
     // Pre: n >= 1;
     // Post: n' = n &&
-    //       immutable(this, n) &&
+    //       immutable(n) &&
     //       R = a[n]
     public Object peek() {
         assert size >= 1;
@@ -103,7 +105,7 @@ public class ArrayQueue {
 
     // Pre: true
     // Post: n' = n &&
-    //       immutable(this, n) &&
+    //       immutable(n) &&
     //       R = b:
     //       for i in [1; n]:
     //           b[i] = a[i]
@@ -112,34 +114,9 @@ public class ArrayQueue {
         return copyOfElements(size);
     }
 
-
-    // Pre: true
-    // Post: n' = n &&
-    //       immutable(this, n) &&
-    //       R = n
-    public int size() {
-        return size;
-    }
-
-    // Pre: true
-    // Post: n' = n &&
-    //       immutable(this, n) &&
-    //       R = (n == 0)
-    public boolean isEmpty() {
-        return size() == 0;
-    }
-
-    // Pre: true
-    // Post: n' = 0
-    public void clear() {
-        elements = new Object[INITIAL_SIZE];
-        size = 0;
-        head = 0;
-    }
-
     private void ensureCapacity(int capacity) {
         if (capacity > elements.length) {
-            // :NOTE: handmade :FIXED:X
+            // :NOTE: handmade :FIXED:
             elements = copyOfElements(Math.max(elements.length * 2, capacity));
             head = 0;
         }

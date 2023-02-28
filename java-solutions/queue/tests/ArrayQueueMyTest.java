@@ -12,7 +12,7 @@ public class ArrayQueueMyTest {
             for (ArrayQueueTester tester : testers) {
                 tester.test();
             }
-        } catch (TestFailedException e) {
+        } catch (ContractFailure e) {
             System.err.println(e.getMessage());
         }
     }

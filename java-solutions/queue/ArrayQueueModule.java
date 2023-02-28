@@ -15,7 +15,7 @@ Let immutable(n):
  */
 
 public class ArrayQueueModule {
-    private static final int INITIAL_SIZE = 5;
+    private static final int INITIAL_SIZE = 10;
     private static int size;
     private static int head;
     private static Object[] elements = new Object[INITIAL_SIZE];
