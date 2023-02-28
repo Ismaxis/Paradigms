@@ -52,7 +52,25 @@ public interface Queue {
     // Post: n' = 0
     void clear();
 
+    // Pre: true
+    // Post: n' = n &&
+    //       immutable(n) &&
+    //       R = (exists? i in [1; n] : a[i] == element)
     boolean contains(Object element);
 
+    // Pre: true
+    // Post: Let r: contains(element)
+    //       if (r):
+    //          Let k:
+    //              min(i in [1;n] : a[i] == element)
+    //          n' = n - 1 &&
+    //          immutable(k - 1) &&
+    //          for i in [k; n):
+    //              a'[i] = a[i + 1]
+    //       else:
+    //          n' = n &&
+    //          immutable(n) &&
+    //
+    //       R = r
     boolean removeFirstOccurrence(Object element);
 }
