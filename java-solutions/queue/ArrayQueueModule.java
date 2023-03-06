@@ -102,12 +102,7 @@ public class ArrayQueueModule {
     //       for i in [1; n]:
     //           b[i] = a[i]
     public static Object[] toArray() {
-        Object[] result = new Object[size];
-        for (int i = 0; i < size; i++) {
-            result[i] = elements[(head + i) % elements.length];
-        }
-
-        return result;
+        return copyOfElements(size);
     }
 
     // Pre: true
@@ -136,12 +131,21 @@ public class ArrayQueueModule {
 
     private static void ensureCapacity(int capacity) {
         if (capacity > elements.length) {
-            Object[] newArr = new Object[Math.max(elements.length * 2, capacity)];
-            for (int i = 0; i < size; i++) {
-                newArr[i] = elements[(head + i) % elements.length];
-            }
-            elements = newArr;
+            elements = copyOfElements(Math.max(elements.length * 2, capacity));
             head = 0;
         }
     }
+
+    private static Object[] copyOfElements(int capacity) {
+        final Object[] newArr = new Object[capacity];
+        if (head + size <= elements.length) {
+            System.arraycopy(elements, head, newArr, 0, size);
+        } else {
+            final int lengthOfLeftPart = elements.length - head;
+            System.arraycopy(elements, head, newArr, 0, lengthOfLeftPart);
+            System.arraycopy(elements, 0, newArr, lengthOfLeftPart, size - lengthOfLeftPart);
+        }
+        return newArr;
+    }
+
 }

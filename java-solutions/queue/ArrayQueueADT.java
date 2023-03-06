@@ -112,13 +112,8 @@ public class ArrayQueueADT {
     //       for i in [1; queue.n]:
     //           b[i] = queue.a[i]
     public static Object[] toArray(ArrayQueueADT queue) {
-        // :NOTE: handmade
-        Object[] result = new Object[queue.size];
-        for (int i = 0; i < queue.size; i++) {
-            result[i] = queue.elements[(queue.head + i) % queue.elements.length];
-        }
-
-        return result;
+        // :NOTE: handmade :FIXED:
+        return copyOfElements(queue, queue.size);
     }
 
     // Pre: queue != null
@@ -151,12 +146,20 @@ public class ArrayQueueADT {
 
     private static void ensureCapacity(ArrayQueueADT queue, int capacity) {
         if (capacity > queue.elements.length) {
-            Object[] newArr = new Object[Math.max(queue.elements.length * 2, capacity)];
-            for (int i = 0; i < queue.size; i++) {
-                newArr[i] = queue.elements[(queue.head + i) % queue.elements.length];
-            }
-            queue.elements = newArr;
+            queue.elements = copyOfElements(queue, Math.max(queue.elements.length * 2, capacity));
             queue.head = 0;
         }
+    }
+
+    private static Object[] copyOfElements(ArrayQueueADT queue, int capacity) {
+        final Object[] newArr = new Object[capacity];
+        if (queue.head + queue.size <= queue.elements.length) {
+            System.arraycopy(queue.elements, queue.head, newArr, 0, queue.size);
+        } else {
+            final int lengthOfLeftPart = queue.elements.length - queue.head;
+            System.arraycopy(queue.elements, queue.head, newArr, 0, lengthOfLeftPart);
+            System.arraycopy(queue.elements, 0, newArr, lengthOfLeftPart, queue.size - lengthOfLeftPart);
+        }
+        return newArr;
     }
 }
