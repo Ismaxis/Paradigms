@@ -1,22 +1,22 @@
-package expression;
+package expression.generic.operations;
 
 import java.util.Objects;
 
-abstract public class BinaryOperation extends Operation {
-    protected final ExpressionToString left;
-    protected final ExpressionToString right;
+abstract public class BinaryOperation<T> extends Operation<T> {
+    protected final Expression<T> left;
+    protected final Expression<T> right;
     protected final BinaryOperationProperties props;
 
-    protected BinaryOperation(ExpressionToString left, ExpressionToString right,
+    protected BinaryOperation(Expression<T> left, Expression<T> right,
                               String symbol, int priority, BinaryOperationProperties props) {
-        super(symbol, priority);
+        super(left.getActualOperations(), symbol, priority);
         this.left = left;
         this.right = right;
         this.props = props;
     }
 
     protected boolean needRightToShield() {
-        if (right instanceof Operation operation) {
+        if (right instanceof Operation<T> operation) {
             return operation.getPriority() < getPriority() ||
                     operation.getPriority() == getPriority() &&
                             (operation.bracketsEqualPriority() || !this.props.isCommutative);
@@ -25,15 +25,13 @@ abstract public class BinaryOperation extends Operation {
     }
 
     protected boolean needLeftToShield() {
-        if (left instanceof Operation operation) {
+        if (left instanceof Operation<T> operation) {
             return operation.getPriority() < getPriority();
         }
         return false;
     }
 
-    abstract protected int calc(int left, int right);
-
-    abstract protected double calc(double left, double right);
+    abstract protected T calc(T left, T right);
 
     @Override
     public boolean bracketsEqualPriority() {
@@ -41,7 +39,7 @@ abstract public class BinaryOperation extends Operation {
     }
 
     @Override
-    public int evaluate(int x, int y, int z) {
+    public T evaluate(T x, T y, T z) {
         return calc(left.evaluate(x, y, z), right.evaluate(x, y, z));
     }
 
@@ -62,14 +60,14 @@ abstract public class BinaryOperation extends Operation {
     }
 
     @Override
-    public void toMiniString(StringBuilder sb, boolean needToShielded) {
-        if (needToShielded) {
+    public void toMiniString(StringBuilder sb, boolean needToBeShielded) {
+        if (needToBeShielded) {
             sb.append('(');
         }
         left.toMiniString(sb, needLeftToShield());
         appendOp(sb);
         right.toMiniString(sb, needRightToShield());
-        if (needToShielded) {
+        if (needToBeShielded) {
             sb.append(')');
         }
     }

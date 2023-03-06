@@ -49,4 +49,49 @@ abstract public class AbstractQueue implements Queue {
         clearImpl();
     }
     protected abstract void clearImpl();
+
+    @Override
+    public boolean contains(Object element) {
+        return !guard(element) && find(getIterator(), element);
+    }
+    @Override
+    public boolean removeFirstOccurrence(Object element) {
+        if (guard(element)) {
+            return false;
+        }
+
+        QueueIterator iter = getIterator();
+        if (find(iter, element)) {
+            iter.removeCur();
+            size--;
+            return true;
+        } else {
+            return false;
+        }
+    }
+    protected boolean guard(Object element) {
+        return isEmpty() || element == null;
+    }
+    protected static boolean find(QueueIterator iter, Object element) {
+        while (!iter.isEnd()) {
+            if (Objects.equals(iter.getElement(), element)) {
+                return true;
+            }
+            iter.inc();
+        }
+        return false;
+    }
+
+    abstract protected QueueIterator getIterator();
+    protected interface QueueIterator {
+        Object getElement();
+
+        Object getNext();
+
+        void inc();
+
+        boolean isEnd();
+
+        void removeCur();
+    }
 }
