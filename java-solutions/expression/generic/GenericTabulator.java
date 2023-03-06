@@ -8,7 +8,6 @@ import expression.generic.operations.TripleExpression;
 import expression.generic.parser.ExpressionParser;
 import expression.generic.parser.TripleParser;
 
-import java.util.Arrays;
 import java.util.Map;
 
 public class GenericTabulator implements Tabulator {
@@ -17,7 +16,7 @@ public class GenericTabulator implements Tabulator {
             "d", new DoubleActualOperations(),
             "bi", new BigIntegerActualOperations()
         );
-    public static String[] getAvalibleModes() {
+    public static String[] getAvailableModes() {
         return mapOfActualOperations.keySet().toArray(new String[0]);
     }
 
@@ -26,7 +25,7 @@ public class GenericTabulator implements Tabulator {
 
         ActualOperations<?> actualOperations = mapOfActualOperations.get(mode.trim());
         if (actualOperations == null) {
-            throw new UnknownTabulatorModeException(mode, getAvalibleModes());
+            throw new UnknownTabulatorModeException(mode, getAvailableModes());
         }
         return fillTable(actualOperations, expression, x1, x2, y1, y2, z1, z2);
     }
