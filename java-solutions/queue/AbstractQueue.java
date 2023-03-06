@@ -86,8 +86,6 @@ abstract public class AbstractQueue implements Queue {
     protected interface QueueIterator {
         Object getElement();
 
-        Object getNext();
-
         void inc();
 
         boolean isEnd();

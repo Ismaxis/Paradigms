@@ -141,7 +141,7 @@ public class ArrayQueue extends AbstractQueue {
     protected static class ArrayQueueIterator implements QueueIterator {
         ArrayQueue queue;
         int i;
-        boolean isEnd = false;
+        boolean isEndReached = false;
         public ArrayQueueIterator(ArrayQueue queue) {
             this.queue = queue;
             this.i = queue.head;
@@ -153,28 +153,31 @@ public class ArrayQueue extends AbstractQueue {
         }
 
         @Override
-        public Object getNext() {
-            return null;
-        }
-
-        @Override
         public void inc() {
             i = (i + 1) % queue.elements.length;
             if (i == (queue.head + queue.size) % queue.elements.length) {
-                isEnd = true;
+                isEndReached = true;
             }
         }
 
         @Override
         public boolean isEnd() {
-            return isEnd;
+            return isEndReached;
         }
 
         @Override
         public void removeCur() {
-            final int length = queue.elements.length;
-            for (int j = i; j != (queue.size + queue.head) % length; j = (j + 1) % length) {
-                queue.elements[j] = queue.elements[(j + 1) % length];
+            final Object[] elements = queue.elements;
+            final int length = elements.length;
+            final int size = queue.size;
+            final int head = queue.head;
+
+            if (head + size <= length) {
+                System.arraycopy(elements, i + 1, elements, i, size - 1 - (i - head));
+            } else {
+                for (int j = i; j != (size + head) % length; j = (j + 1) % length) {
+                    elements[j] = elements[(j + 1) % length];
+                }
             }
         }
     }

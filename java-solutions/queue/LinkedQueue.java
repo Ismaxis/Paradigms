@@ -1,7 +1,5 @@
 package queue;
 
-import java.util.Objects;
-
 public class LinkedQueue extends AbstractQueue {
     private Node head;
     private Node tail;
@@ -84,10 +82,7 @@ public class LinkedQueue extends AbstractQueue {
         public Object getElement() {
             return curNode.getElement();
         }
-        @Override
-        public Object getNext() {
-            return curNode.getNext().getElement();
-        }
+
         @Override
         public void inc() {
             prevNode = curNode;
@@ -102,7 +97,6 @@ public class LinkedQueue extends AbstractQueue {
             if (curNode.isEnd()) {
                 queue.tail = prevNode;
             }
-            // isBegin()
             if (curNode == queue.head) {
                 queue.head = curNode.getNext();
             } else {
