@@ -7,6 +7,10 @@ public interface ActualOperations<T> {
     T divide(T left, T right);
 
     T negate(T val);
+
     T toConst(String str);
     T toConst(int val);
+    boolean isStartOfConst(char ch);
+    boolean isPartOfConst(char ch);
+    String getOperationTypeName();
 }

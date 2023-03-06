@@ -17,7 +17,6 @@ public class IntActualOperations extends AbstractActualOperations<Integer>  {
         }
         return left + right;
     }
-
     @Override
     public Integer subtract(Integer left, Integer right) {
         if (overflowChecksEnabled &&
@@ -27,7 +26,6 @@ public class IntActualOperations extends AbstractActualOperations<Integer>  {
         }
         return left - right;
     }
-
     @Override
     public Integer multiply(Integer left, Integer right) {
         int res = left * right;
@@ -38,7 +36,6 @@ public class IntActualOperations extends AbstractActualOperations<Integer>  {
         }
         return res;
     }
-
     @Override
     public Integer divide(Integer left, Integer right) {
         if (overflowChecksEnabled) {
@@ -56,13 +53,25 @@ public class IntActualOperations extends AbstractActualOperations<Integer>  {
         }
         return -val;
     }
+
     @Override
     public Integer toConst(String str) {
         return Integer.parseInt(str);
     }
-
     @Override
     public Integer toConst(int val) {
         return val;
+    }
+    @Override
+    public boolean isStartOfConst(char ch) {
+        return Character.isDigit(ch);
+    }
+    @Override
+    public boolean isPartOfConst(char ch) {
+        return Character.isDigit(ch);
+    }
+    @Override
+    public String getOperationTypeName() {
+        return "INT";
     }
 }

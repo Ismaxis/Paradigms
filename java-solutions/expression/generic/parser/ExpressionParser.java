@@ -4,9 +4,6 @@ import expression.exceptions.*;
 import expression.generic.actualOperations.ActualOperations;
 import expression.generic.operations.*;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-
 public class ExpressionParser<T> extends BaseParser implements TripleParser<T> {
     ActualOperations<T> actualOperations;
 
@@ -31,6 +28,7 @@ public class ExpressionParser<T> extends BaseParser implements TripleParser<T> {
     }
 
 //    private Expression<T> parseBitOps() {
+//
 //        Expression<T> left = parseExpression();
 //
 //        while (true) {
@@ -53,9 +51,9 @@ public class ExpressionParser<T> extends BaseParser implements TripleParser<T> {
         while (true) {
             skipWhitespace();
             if (take('+')) {
-                left = new Add(left, parseTerm());
+                left = new Add<>(left, parseTerm());
             } else if (take('-')) {
-                left = new Subtract(left, parseTerm());
+                left = new Subtract<>(left, parseTerm());
             } else {
                 return left;
             }
@@ -68,9 +66,9 @@ public class ExpressionParser<T> extends BaseParser implements TripleParser<T> {
         while (true) {
             skipWhitespace();
             if (take('*')) {
-                left = new Multiply(left, parseFactor());
+                left = new Multiply<>(left, parseFactor());
             } else if (take('/')) {
-                left = new Divide(left, parseFactor());
+                left = new Divide<>(left, parseFactor());
             } else {
                 return left;
             }
@@ -85,20 +83,23 @@ public class ExpressionParser<T> extends BaseParser implements TripleParser<T> {
             expectCloseBracket();
             return res;
         } else if (take('-')) {
-            if (Character.isDigit(pick()) || Character.isAlphabetic(pick())) {
+            if (actualOperations.isStartOfConst(pick()) || Character.isAlphabetic(pick())) {
                 return parsePrimitive(true);
             } else {
-                try {
-                    return parseBrackets(Negate.class.getConstructor(Expression.class));
-                } catch (NoSuchMethodException e) {
-                    throw new RuntimeException(e);
-                }
+                return new Negate<>(parseBrackets());
             }
-        } else {
+        } /* else if (take(<new UnaryOperation symbol>)) {
+
+        } */ else {
             return parsePrimitive(false);
         }
     }
 
+    private void expectCloseBracket() {
+        if (!take(')')) {
+            throw new CloseBracketsException(source.getPos(), pick());
+        }
+    }
     private void expectEndOfComplexOperand(String expected) {
         if (take(END)) {
             throw primitiveStartParseError(END);
@@ -108,35 +109,24 @@ public class ExpressionParser<T> extends BaseParser implements TripleParser<T> {
         }
     }
 
-    private void expectCloseBracket() {
-        if (!take(')')) {
-            throw new CloseBracketsException(source.getPos(), pick());
-        }
-    }
-
-    private Expression<T> parseBrackets(Constructor<? extends Expression> cl) {
-        final Expression<T> child;
+    private Expression<T> parseBrackets() {
+        final Expression<T> expression;
         if (take('(')) {
-            child = parseTopLevel();
+            expression = parseTopLevel();
             skipWhitespace();
             expectCloseBracket();
         } else {
-            child = parseFactor();
+            expression = parseFactor();
         }
-
-        try {
-            return cl.newInstance(child);
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
+        return expression;
     }
 
     private Expression<T> parsePrimitive(boolean isNegative) {
         Expression<T> primitive;
         skipWhitespace();
-        if (Character.isDigit(pick())) {
+        if (actualOperations.isStartOfConst(pick())) {
             primitive = parseConst(isNegative);
-        } else if (isVariableStart(pick())) {
+        } else if (isStartOfVariable(pick())) {
             final Expression<T> variable = parseVariable();
             primitive = isNegative ? new Negate<T>(variable) : variable;
         } else {
@@ -145,13 +135,6 @@ public class ExpressionParser<T> extends BaseParser implements TripleParser<T> {
         expectEndOfPrimitive();
         return primitive;
     }
-
-    private void expectEndOfPrimitive() {
-        if (!isValidEndOfPrimitive(pick())) {
-            throw primitiveEndParseError(pick());
-        }
-    }
-
     private ParserException primitiveStartParseError(char found) {
         if (found == END) {
             return new PrematureEndExceptions(source.getPos(), "Variable or Const");
@@ -159,53 +142,53 @@ public class ExpressionParser<T> extends BaseParser implements TripleParser<T> {
             return new PrimitiveExpectedException(source.getPos(), found);
         }
     }
-
-    private UnexpectedCharacterException primitiveEndParseError(char found) {
-        return new UnexpectedCharacterException(source.getPos(), "Whitespace or END", found);
+    private void expectEndOfPrimitive() {
+        if (!isValidEndOfPrimitive(pick())) {
+            throw new UnexpectedCharacterException(source.getPos(), "Whitespace or END", pick());
+        }
     }
 
     private Expression<T> parseVariable() {
         StringBuilder sb = new StringBuilder();
         sb.append(take());
-        while (isVariablePart(pick())) {
+        while (isPartOfVariable(pick())) {
             sb.append(take());
         }
         return new Variable<T>(actualOperations, sb.toString());
     }
+    private Expression<T> parseConst(boolean isNegative) {
+        StringBuilder sb = new StringBuilder(isNegative ? "-" : "");
+        while (isPartOfConst()) {
+            sb.append(take());
+        }
 
-    private static boolean isVariableStart(char ch) {
-        return ch == 'x' || ch == 'y' || ch == 'z';
+        try {
+            return new Const<>(actualOperations, sb.toString());
+        } catch (NumberFormatException e) {
+            throw new ParseConstException(sb.toString(), actualOperations.getOperationTypeName());
+        }
     }
 
-    private static boolean isVariablePart(char ch) {
+    private static boolean isStartOfVariable(char ch) {
+        return ch == 'x' || ch == 'y' || ch == 'z';
+    }
+    private static boolean isPartOfVariable(char ch) {
         return false;
+    }
+    private boolean isStartOfConst() {
+        return Character.isDigit(pick());
+    }
+    private boolean isPartOfConst() {
+        return Character.isDigit(pick()) || pick() == '.';
     }
 
     private static boolean isValidEndOfComplexOperand(char ch) {
         return Character.isWhitespace(ch) || (ch == '(') || (ch == '-');
     }
-
     private static boolean isValidEndOfPrimitive(char ch) {
         return Character.isWhitespace(ch) || isOperationSymbol(ch) || (ch == END) || (ch == ')');
     }
-
     private static boolean isOperationSymbol(char ch) {
         return (ch == '+') || (ch == '-') || (ch == '*') || (ch == '/');
-    }
-
-    private Expression<T> parseConst(boolean isNegative) {
-        StringBuilder sb = new StringBuilder(isNegative ? "-" : "");
-        while (Character.isDigit(pick()) || pick() == '.') {
-            sb.append(take());
-        }
-
-        Const<T> aConst;
-        try {
-            aConst = new Const<T>(actualOperations, sb.toString());
-        } catch (NumberFormatException e) {
-            throw new ParseConstException(sb.toString(), "INT");
-        }
-
-        return aConst;
     }
 }
