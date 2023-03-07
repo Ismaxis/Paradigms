@@ -69,9 +69,11 @@ abstract public class AbstractQueue implements Queue {
             return false;
         }
     }
+
     protected boolean guard(Object element) {
         return isEmpty() || element == null;
     }
+
     protected static boolean find(QueueIterator iter, Object element) {
         while (!iter.isEnd()) {
             if (Objects.equals(iter.getElement(), element)) {
@@ -83,6 +85,7 @@ abstract public class AbstractQueue implements Queue {
     }
 
     abstract protected QueueIterator getIterator();
+
     protected interface QueueIterator {
         Object getElement();
 

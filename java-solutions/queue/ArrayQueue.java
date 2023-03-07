@@ -138,12 +138,16 @@ public class ArrayQueue extends AbstractQueue {
     protected QueueIterator getIterator() {
         return new ArrayQueueIterator(this);
     }
+
+    // :NOTE: static
     protected static class ArrayQueueIterator implements QueueIterator {
+        // :NOTE: access
         ArrayQueue queue;
         int i;
         boolean isEndReached = false;
         public ArrayQueueIterator(ArrayQueue queue) {
             this.queue = queue;
+            // :NOTE: i -- index
             this.i = queue.head;
         }
 
@@ -175,6 +179,7 @@ public class ArrayQueue extends AbstractQueue {
             if (head + size <= length) {
                 System.arraycopy(elements, i + 1, elements, i, size - 1 - (i - head));
             } else {
+                // :NOTE: arraycopy
                 for (int j = i; j != (size + head) % length; j = (j + 1) % length) {
                     elements[j] = elements[(j + 1) % length];
                 }
