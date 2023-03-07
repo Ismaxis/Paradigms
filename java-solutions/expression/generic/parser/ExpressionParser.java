@@ -71,6 +71,8 @@ public class ExpressionParser<T> extends BaseParser implements TripleParser<T> {
                 left = new Multiply<>(left, parseFactor());
             } else if (take('/')) {
                 left = new Divide<>(left, parseFactor());
+            } else if (take("mod")) {
+              return new Mod<>(left, parseFactor());
             } else {
                 return left;
             }
@@ -90,9 +92,11 @@ public class ExpressionParser<T> extends BaseParser implements TripleParser<T> {
             } else {
                 return new Negate<>(parseBrackets());
             }
-        } /* else if (take(<new UnaryOperation symbol>)) {
-
-        } */ else {
+        } else if (take("abs")) {
+            return new Abs<>(parseBrackets());
+        } else if (take("square")) {
+            return new Square<>(parseBrackets());
+        } else {
             return parsePrimitive(false);
         }
     }

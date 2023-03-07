@@ -1,9 +1,6 @@
 package expression.generic;
 
-import expression.generic.actualOperations.ActualOperations;
-import expression.generic.actualOperations.BigIntegerActualOperations;
-import expression.generic.actualOperations.DoubleActualOperations;
-import expression.generic.actualOperations.IntActualOperations;
+import expression.generic.actualOperations.*;
 import expression.generic.operations.TripleExpression;
 import expression.generic.parser.ExpressionParser;
 import expression.generic.parser.TripleParser;
@@ -14,7 +11,10 @@ public class GenericTabulator implements Tabulator {
     private static final Map<String, ActualOperations<?>> mapOfActualOperations = Map.of(
             "i", new IntActualOperations(true),
             "d", new DoubleActualOperations(),
-            "bi", new BigIntegerActualOperations()
+            "bi", new BigIntegerActualOperations(),
+            "u", new IntActualOperations(false),
+            "l", new LongActualOperations(),
+            "s", new ShortActualOperations()
         );
     public static String[] getAvailableModes() {
         return mapOfActualOperations.keySet().toArray(new String[0]);
