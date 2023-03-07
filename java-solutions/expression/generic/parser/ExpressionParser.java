@@ -3,6 +3,8 @@ package expression.generic.parser;
 import expression.exceptions.*;
 import expression.generic.actualOperations.ActualOperations;
 import expression.generic.operations.*;
+import expression.parser.BaseParser;
+import expression.parser.StringCharSource;
 
 public class ExpressionParser<T> extends BaseParser implements TripleParser<T> {
     ActualOperations<T> actualOperations;
@@ -69,6 +71,8 @@ public class ExpressionParser<T> extends BaseParser implements TripleParser<T> {
                 left = new Multiply<>(left, parseFactor());
             } else if (take('/')) {
                 left = new Divide<>(left, parseFactor());
+            } else if (take("mod")) {
+              return new Mod<>(left, parseFactor());
             } else {
                 return left;
             }
@@ -83,14 +87,16 @@ public class ExpressionParser<T> extends BaseParser implements TripleParser<T> {
             expectCloseBracket();
             return res;
         } else if (take('-')) {
-            if (actualOperations.isStartOfConst(pick()) || Character.isAlphabetic(pick())) {
+            if (isStartOfConst(pick()) || Character.isAlphabetic(pick())) {
                 return parsePrimitive(true);
             } else {
                 return new Negate<>(parseBrackets());
             }
-        } /* else if (take(<new UnaryOperation symbol>)) {
-
-        } */ else {
+        } else if (take("abs")) {
+            return new Abs<>(parseBrackets());
+        } else if (take("square")) {
+            return new Square<>(parseBrackets());
+        } else {
             return parsePrimitive(false);
         }
     }
@@ -122,14 +128,14 @@ public class ExpressionParser<T> extends BaseParser implements TripleParser<T> {
     }
 
     private Expression<T> parsePrimitive(boolean isNegative) {
-        Expression<T> primitive;
+        final Expression<T> primitive;
         skipWhitespace();
-        if (actualOperations.isStartOfConst(pick())) {
-            primitive = parseConst(isNegative);
-        } else if (isStartOfVariable(pick())) {
+        if (isStartOfVariable(pick())) {
             final Expression<T> variable = parseVariable();
             primitive = isNegative ? new Negate<T>(variable) : variable;
-        } else {
+        } else if (isStartOfConst(pick())) {
+            primitive = parseConst(isNegative);
+        }  else {
             throw primitiveStartParseError(pick());
         }
         expectEndOfPrimitive();
@@ -158,7 +164,7 @@ public class ExpressionParser<T> extends BaseParser implements TripleParser<T> {
     }
     private Expression<T> parseConst(boolean isNegative) {
         StringBuilder sb = new StringBuilder(isNegative ? "-" : "");
-        while (isPartOfConst()) {
+        while (isPartOfConst(pick())) {
             sb.append(take());
         }
 
@@ -175,13 +181,12 @@ public class ExpressionParser<T> extends BaseParser implements TripleParser<T> {
     private static boolean isPartOfVariable(char ch) {
         return false;
     }
-    private boolean isStartOfConst() {
-        return Character.isDigit(pick());
+    private boolean isStartOfConst(char ch) {
+        return actualOperations.isStartOfConst(ch);
     }
-    private boolean isPartOfConst() {
-        return Character.isDigit(pick()) || pick() == '.';
+    private boolean isPartOfConst(char ch) {
+        return ch != END && ch != ')' && !Character.isWhitespace(ch);
     }
-
     private static boolean isValidEndOfComplexOperand(char ch) {
         return Character.isWhitespace(ch) || (ch == '(') || (ch == '-');
     }

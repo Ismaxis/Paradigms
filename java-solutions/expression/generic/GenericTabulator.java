@@ -1,23 +1,22 @@
 package expression.generic;
 
-import expression.generic.actualOperations.ActualOperations;
-import expression.generic.actualOperations.BigIntegerActualOperations;
-import expression.generic.actualOperations.DoubleActualOperations;
-import expression.generic.actualOperations.IntActualOperations;
+import expression.generic.actualOperations.*;
 import expression.generic.operations.TripleExpression;
 import expression.generic.parser.ExpressionParser;
 import expression.generic.parser.TripleParser;
 
-import java.util.Arrays;
 import java.util.Map;
 
 public class GenericTabulator implements Tabulator {
     private static final Map<String, ActualOperations<?>> mapOfActualOperations = Map.of(
             "i", new IntActualOperations(true),
             "d", new DoubleActualOperations(),
-            "bi", new BigIntegerActualOperations()
+            "bi", new BigIntegerActualOperations(),
+            "u", new IntActualOperations(false),
+            "l", new LongActualOperations(),
+            "s", new ShortActualOperations()
         );
-    public static String[] getAvalibleModes() {
+    public static String[] getAvailableModes() {
         return mapOfActualOperations.keySet().toArray(new String[0]);
     }
 
@@ -26,7 +25,7 @@ public class GenericTabulator implements Tabulator {
 
         ActualOperations<?> actualOperations = mapOfActualOperations.get(mode.trim());
         if (actualOperations == null) {
-            throw new UnknownTabulatorModeException(mode, getAvalibleModes());
+            throw new UnknownTabulatorModeException(mode, getAvailableModes());
         }
         return fillTable(actualOperations, expression, x1, x2, y1, y2, z1, z2);
     }

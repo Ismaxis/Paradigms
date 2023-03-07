@@ -17,10 +17,18 @@ public class DoubleActualOperations extends AbstractActualOperations<Double> {
     public Double divide(Double left, Double right) {
         return left / right;
     }
+    @Override
+    public Double mod(Double left, Double right) {
+        return left % right;
+    }
 
     @Override
     public Double negate(Double val) {
         return -val;
+    }
+    @Override
+    public Double abs(Double val) {
+        return Math.abs(val);
     }
 
     @Override

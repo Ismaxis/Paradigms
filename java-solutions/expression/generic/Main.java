@@ -17,11 +17,11 @@ public class Main {
 
         int[][] bounds = new int[3][2];
         Map<Integer, String> dimentionMap = Map.of(0, "x", 1, "y", 2, "z");
-        String avalibleModes = Arrays.toString(GenericTabulator.getAvalibleModes());
+        String availableModes = Arrays.toString(GenericTabulator.getAvailableModes());
 
         while (true) {
             try {
-                System.out.println("Enter mode " + avalibleModes + " (or '" + EXIT_PHRASE + "' to exit): ");
+                System.out.println("Enter mode " + availableModes + " (or '" + EXIT_PHRASE + "' to exit): ");
                 String mode = scn.nextLine();
                 if (mode.equals(EXIT_PHRASE)) {
                     return;
@@ -30,12 +30,12 @@ public class Main {
                 System.out.println("Enter expression: ");
                 String expression = scn.nextLine();
 
-                for (int dimention = 0; dimention < 3; dimention++) {
-                    String dimentionStr = dimentionMap.getOrDefault(dimention, String.valueOf(dimention));
-                    System.out.println("Enter lower bound for " + dimentionStr + ": ");
-                    bounds[dimention][0] = scn.nextInt();
-                    System.out.println("Enter upper bound for " + dimentionStr + ": ");
-                    bounds[dimention][1] = scn.nextInt();
+                for (int dimension = 0; dimension < 3; dimension++) {
+                    String dimensionStr = dimentionMap.getOrDefault(dimension, String.valueOf(dimension));
+                    System.out.println("Enter lower bound for " + dimensionStr + ": ");
+                    bounds[dimension][0] = scn.nextInt();
+                    System.out.println("Enter upper bound for " + dimensionStr + ": ");
+                    bounds[dimension][1] = scn.nextInt();
                 }
 
                 Object[][][] res = tabulator.tabulate(mode, expression,

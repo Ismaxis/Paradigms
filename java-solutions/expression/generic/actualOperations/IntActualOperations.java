@@ -10,29 +10,32 @@ public class IntActualOperations extends AbstractActualOperations<Integer>  {
 
     @Override
     public Integer add(Integer left, Integer right) {
-        if (overflowChecksEnabled &&
-                right > 0 && Integer.MAX_VALUE - right < left ||
-                right < 0 && Integer.MIN_VALUE - right > left) {
-            throw new IntOverflowException("+", left, right);
+        if (overflowChecksEnabled) {
+            if ((right > 0 && Integer.MAX_VALUE - right < left) ||
+                    (right < 0 && Integer.MIN_VALUE - right > left)) {
+                throw new IntOverflowException("+", left, right);
+            }
         }
         return left + right;
     }
     @Override
     public Integer subtract(Integer left, Integer right) {
-        if (overflowChecksEnabled &&
-                right > 0 && Integer.MIN_VALUE + right > left ||
-                right < 0 && Integer.MAX_VALUE + right < left) {
+        if (overflowChecksEnabled) {
+            if ((right > 0 && Integer.MIN_VALUE + right > left) ||
+                    (right < 0 && Integer.MAX_VALUE + right < left)) {
             throw new IntOverflowException("-", left, right);
+            }
         }
         return left - right;
     }
     @Override
     public Integer multiply(Integer left, Integer right) {
         int res = left * right;
-        if (overflowChecksEnabled &&
-                ((right != 0) && (res / right != left)) ||
+        if (overflowChecksEnabled) {
+            if ((right != 0 && res / right != left) ||
                 (left == Integer.MIN_VALUE && right == -1)) {
-            throw new IntOverflowException("*", left, right);
+                throw new IntOverflowException("*", left, right);
+            }
         }
         return res;
     }
@@ -45,6 +48,10 @@ public class IntActualOperations extends AbstractActualOperations<Integer>  {
         }
         return left / right;
     }
+    @Override
+    public Integer mod(Integer left, Integer right) {
+        return left % right;
+    }
 
     @Override
     public Integer negate(Integer val) {
@@ -52,6 +59,15 @@ public class IntActualOperations extends AbstractActualOperations<Integer>  {
             throw new IntOverflowException("-", val);
         }
         return -val;
+    }
+    @Override
+    public Integer abs(Integer val) {
+        if (overflowChecksEnabled) {
+            if (val == Integer.MIN_VALUE) {
+                throw new IntOverflowException("abs", val);
+            }
+        }
+        return Math.abs(val);
     }
 
     @Override
@@ -62,14 +78,7 @@ public class IntActualOperations extends AbstractActualOperations<Integer>  {
     public Integer toConst(int val) {
         return val;
     }
-    @Override
-    public boolean isStartOfConst(char ch) {
-        return Character.isDigit(ch);
-    }
-    @Override
-    public boolean isPartOfConst(char ch) {
-        return Character.isDigit(ch);
-    }
+
     @Override
     public String getOperationTypeName() {
         return "INT";
