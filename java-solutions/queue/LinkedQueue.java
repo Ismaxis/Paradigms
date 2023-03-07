@@ -66,19 +66,18 @@ public class LinkedQueue extends AbstractQueue {
 
     @Override
     protected QueueIterator getIterator() {
-        return new LinkedQueueIterator(this);
+        return new LinkedQueueIterator();
     }
-    protected static class LinkedQueueIterator implements QueueIterator {
-        // :NOTE: access
-        LinkedQueue queue;
-        Node prevNode;
-        Node curNode;
+    protected class LinkedQueueIterator implements QueueIterator {
+        // :NOTE: access :FIXED:
+        protected Node prevNode;
+        protected Node curNode;
 
-        public LinkedQueueIterator(LinkedQueue queue) {
-            this.queue = queue;
+        public LinkedQueueIterator() {
             prevNode = null;
-            curNode = queue.head;
+            curNode = head;
         }
+
         @Override
         public Object getElement() {
             return curNode.getElement();
@@ -90,18 +89,19 @@ public class LinkedQueue extends AbstractQueue {
             curNode = curNode.getNext();
         }
 
-        // :NOTE: && prevNode.isEnd()
+        // :NOTE: && prevNode.isEnd() :FIXED:
         @Override
         public boolean isEnd() {
-            return curNode == null && prevNode.isEnd();
+            return curNode == null;
         }
+
         @Override
         public void removeCur() {
             if (curNode.isEnd()) {
-                queue.tail = prevNode;
+                tail = prevNode;
             }
-            if (curNode == queue.head) {
-                queue.head = curNode.getNext();
+            if (curNode == head) {
+                head = curNode.getNext();
             } else {
                 prevNode.setNext(curNode.getNext());
             }
