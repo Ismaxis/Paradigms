@@ -48,6 +48,8 @@ public class IntActualOperations extends AbstractActualOperations<Integer>  {
         }
         return left / right;
     }
+
+    // :NOTE: здесь ничего проверить не нужно?
     @Override
     public Integer mod(Integer left, Integer right) {
         return left % right;

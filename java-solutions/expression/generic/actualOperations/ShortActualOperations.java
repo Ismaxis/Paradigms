@@ -35,6 +35,7 @@ public class ShortActualOperations extends AbstractActualOperations<Short> {
     public Short toConst(String str) {
         return Short.parseShort(str);
     }
+    // :NOTE: обычно ты никогда не хочешь приводишь больший тип к меньшему, с большой вероятностью ты получишь не то, что ожидаешь
     @Override
     public Short toConst(int val) {
         return (short) val;

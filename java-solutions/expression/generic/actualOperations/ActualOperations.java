@@ -12,7 +12,9 @@ public interface ActualOperations<T> {
 
     T toConst(String str);
     T toConst(int val);
+    // :NOTE: две одинаковых имплементации - в AbstractActualOperations и DoubleActualOperations
     boolean isStartOfConst(char ch);
+    // :NOTE: не используется
     boolean isPartOfConst(char ch);
     String getOperationTypeName();
 }
