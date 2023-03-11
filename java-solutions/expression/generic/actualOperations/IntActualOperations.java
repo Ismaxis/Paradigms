@@ -1,5 +1,6 @@
 package expression.generic.actualOperations;
 
+import expression.exceptions.DivisionByZeroException;
 import expression.exceptions.IntOverflowException;
 
 public class IntActualOperations extends AbstractActualOperations<Integer>  {
@@ -18,6 +19,7 @@ public class IntActualOperations extends AbstractActualOperations<Integer>  {
         }
         return left + right;
     }
+
     @Override
     public Integer subtract(Integer left, Integer right) {
         if (overflowChecksEnabled) {
@@ -28,6 +30,7 @@ public class IntActualOperations extends AbstractActualOperations<Integer>  {
         }
         return left - right;
     }
+
     @Override
     public Integer multiply(Integer left, Integer right) {
         int res = left * right;
@@ -39,6 +42,7 @@ public class IntActualOperations extends AbstractActualOperations<Integer>  {
         }
         return res;
     }
+
     @Override
     public Integer divide(Integer left, Integer right) {
         if (overflowChecksEnabled) {
@@ -49,9 +53,14 @@ public class IntActualOperations extends AbstractActualOperations<Integer>  {
         return left / right;
     }
 
-    // :NOTE: здесь ничего проверить не нужно?
+    // :NOTE: здесь ничего проверить не нужно? :FIXED:
+    // :ANS: вообще, когда right == 0, '%' сам кидает ArithmeticException,
+    //       но проверка лишней не будет.
     @Override
     public Integer mod(Integer left, Integer right) {
+        if (right == 0) {
+            throw new DivisionByZeroException("Division by zero: " + left + " % " + right);
+        }
         return left % right;
     }
 
@@ -62,6 +71,7 @@ public class IntActualOperations extends AbstractActualOperations<Integer>  {
         }
         return -val;
     }
+
     @Override
     public Integer abs(Integer val) {
         if (overflowChecksEnabled) {
@@ -76,8 +86,9 @@ public class IntActualOperations extends AbstractActualOperations<Integer>  {
     public Integer toConst(String str) {
         return Integer.parseInt(str);
     }
+
     @Override
-    public Integer toConst(int val) {
+    public Integer fromIntToConst(int val) {
         return val;
     }
 

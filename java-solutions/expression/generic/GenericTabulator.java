@@ -44,9 +44,9 @@ public class GenericTabulator implements Tabulator {
                     Object cellValue;
                     try {
                         cellValue = parsedExpression.evaluate(
-                            actualOperations.toConst(x1 + i),
-                            actualOperations.toConst(y1 + j),
-                            actualOperations.toConst(z1 + k)
+                            actualOperations.fromIntToConst(x1 + i),
+                            actualOperations.fromIntToConst(y1 + j),
+                            actualOperations.fromIntToConst(z1 + k)
                         );
                     } catch (Exception e) {
                         cellValue = null;

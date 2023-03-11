@@ -7,18 +7,22 @@ public class BigIntegerActualOperations extends AbstractActualOperations<BigInte
     public BigInteger add(BigInteger left, BigInteger right) {
         return left.add(right);
     }
+
     @Override
     public BigInteger subtract(BigInteger left, BigInteger right) {
         return left.subtract(right);
     }
+
     @Override
     public BigInteger multiply(BigInteger left, BigInteger right) {
         return left.multiply(right);
     }
+
     @Override
     public BigInteger divide(BigInteger left, BigInteger right) {
         return left.divide(right);
     }
+
     @Override
     public BigInteger mod(BigInteger left, BigInteger right) {
         return left.mod(right);
@@ -28,6 +32,7 @@ public class BigIntegerActualOperations extends AbstractActualOperations<BigInte
     public BigInteger negate(BigInteger val) {
         return val.negate();
     }
+
     @Override
     public BigInteger abs(BigInteger val) {
         return val.abs();
@@ -37,8 +42,9 @@ public class BigIntegerActualOperations extends AbstractActualOperations<BigInte
     public BigInteger toConst(String str) {
         return new BigInteger(str);
     }
+
     @Override
-    public BigInteger toConst(int val) {
+    public BigInteger fromIntToConst(int val) {
         return BigInteger.valueOf(val);
     }
 
