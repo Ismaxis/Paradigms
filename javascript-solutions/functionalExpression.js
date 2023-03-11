@@ -1,91 +1,64 @@
-const cnst = val => (x,y,z) => val;
+const cnst = value => () => value;
 
-const variable = name => (x,y,z) => {
-    if (name === "x") {
-        return x;
-    } else if (name === "y") {
-        return y;
-    } else if (name === "z") {
-        return z;
-    }
+const varToValueIndex = {
+    'x': 0,
+    'y': 1,
+    'z': 2,
+}
+const variable = name => (...values) => values[varToValueIndex[name]];
 
-    return "NO SUCH VAR NAME"
+const binaryOperation = (f, left, right) => (x,y,z) => f(left(x,y,z), right(x,y,z));
+
+const add = (left, right) => binaryOperation((a, b) => a + b, left, right);
+const subtract = (left, right) => binaryOperation((a, b) => a - b, left, right);
+const multiply = (left, right) => binaryOperation((a, b) => a * b, left, right);
+const divide = (left, right) => binaryOperation((a, b) => a / b, left, right);
+
+const unaryOperation = (f, child) => (x,y,z) => f(child(x,y,z));
+
+const negate = child => unaryOperation(a => -a, child);
+
+const variables = {
+    'x': variable('x'),
+    'y': variable('y'),
+    'z': variable('z'),
 }
 
-const binaryFunc = (f, left, right) => (x,y,z) => f(left(x,y,z), right(x,y,z));
-
-const add = (left, right) => binaryFunc((a, b) => a + b, left, right);
-const subtract = (left, right) => binaryFunc((a, b) => a - b, left, right);
-const multiply = (left, right) => binaryFunc((a, b) => a * b, left, right);
-const divide = (left, right) => binaryFunc((a, b) => a / b, left, right);
-
-const unaryFunc = (f, child) => (x,y,z) => f(child(x,y,z));
-
-const negate = child => unaryFunc(a => -a, child);
+const operations = {
+    '+': add,
+    '-': subtract,
+    '*': multiply,
+    '/': divide,
+    "negate": negate,
+}
 
 const parse = str => {
-    let tokens = tokenize(str)
     let stack = [];
-    for (let token of tokens) {
-        if (isVar(token)) {
-            stack.push(variable(token));
-        } else if (isConst(token)) {
+    let tokens = str.split(' ').filter(token => token.length > 0);
+    tokens.reduce((stack, token) => {
+        if (isConst(token)) {
             stack.push(cnst(parseInt(token)));
-        } else if (token === "negate") {
-            stack.push(negate(stack.pop()))
-        } else {
-            const right = stack.pop();
-            const left = stack.pop();
-            let op;
-            if (token === '+') {
-                op = add(left, right);
-            } else if (token === '-') {
-                op = subtract(left, right);
-            } else if (token === '*') {
-                op = multiply(left, right);
-            } else if (token === '/') {
-                op = divide(left, right);
-            }
-            stack.push(op);
+        } else if (token in variables) {
+            stack.push(variables[token]);
+        } else if (token in operations) {
+            const op = operations[token];
+            const args = stack.splice(-op.length);
+            stack.push(op(...args));
         }
-    }
+        return stack
+    }, stack)
     return stack.pop();
 }
 
-const tokenize = str => {
-    const tokens = []
-    for (let i = 0; i < str.length; i++) {
-        if (!isWhitespace(str.charAt(i))) {
-            const start = i;
-            i++;
-            while (!isWhitespace(str.charAt(i))) {
-                i++;
-            }
-            tokens.push(str.substring(start, i));
-        }
-    }
+const isConst = str => !isNaN(str);
 
-    return tokens;
-}
-
-const isWhitespace = str => {
-    return str.trim() === '';
-}
-
-const isVar = str => {
-    return str === "x" || str === "y" || str === "z";
-}
-
-const isConst = str => {
-    return !isNaN(str);
-}
-
-const main = () => { // TODO test program
-    println("f(x) = x^2 - 2x + 1");
-    const quadraticEquation = parse("x x * 2 x * - 1 +");
-    for (let i = 0; i <= 10; i++) {
-        println("f(" + i + ") = " + quadraticEquation(i, 0, 0))
-    }
+const main = () => {
+    const myPrintln = typeof(println) === 'undefined' ? str => console.log(str) : println;
+    const eqRPN = "x x * 2 x * - 1 +"
+    myPrintln("f(x) = x^2 - 2x + 1 | (" + eqRPN + ")");
+    const quadraticEquation = parse(eqRPN);
+    const printForI = i => myPrintln("f(" + i + ") = " + quadraticEquation(i, 0, 0));
+    [...Array(11).keys()].forEach(printForI)
 }
 
 main();
