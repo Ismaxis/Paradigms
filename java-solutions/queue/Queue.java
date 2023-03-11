@@ -13,6 +13,9 @@ Inv:
 Let immutable(n):
     for i in [1; n]:
        a'[i] = a[i]
+Let min(b[1;k]):
+    b[i] : for j in [1;k]:
+        b[i] <= b[j]
  */
 
 public interface Queue {
@@ -62,7 +65,7 @@ public interface Queue {
     // Post: Let r: contains(element)
     //       if (r):
     //          Let k:
-    // :NOTE: min
+    // :NOTE: min :FIXED:
     //              min(i in [1;n] : a[i] == element)
     //          n' = n - 1 &&
     //          immutable(k - 1) &&

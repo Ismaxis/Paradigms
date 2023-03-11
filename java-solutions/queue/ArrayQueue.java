@@ -136,53 +136,44 @@ public class ArrayQueue extends AbstractQueue {
 
     @Override
     protected QueueIterator getIterator() {
-        return new ArrayQueueIterator(this);
+        return new ArrayQueueIterator();
     }
 
-    // :NOTE: static
-    protected static class ArrayQueueIterator implements QueueIterator {
-        // :NOTE: access
-        ArrayQueue queue;
-        int i;
-        boolean isEndReached = false;
-        public ArrayQueueIterator(ArrayQueue queue) {
-            this.queue = queue;
-            // :NOTE: i -- index
-            this.i = queue.head;
+    // :NOTE: static :FIXED:
+    protected class ArrayQueueIterator implements QueueIterator {
+        // :NOTE: access :FIXED:
+        protected int i;
+
+        public ArrayQueueIterator() {
+            // :NOTE: i -- index :FIXED:
+            this.i = 0;
         }
 
         @Override
         public Object getElement() {
-            return queue.elements[i];
+            return elements[(head + i) % elements.length];
         }
 
         @Override
         public void inc() {
-            i = (i + 1) % queue.elements.length;
-            if (i == (queue.head + queue.size) % queue.elements.length) {
-                isEndReached = true;
-            }
+            i++;
         }
 
         @Override
         public boolean isEnd() {
-            return isEndReached;
+            return i == size;
         }
 
         @Override
         public void removeCur() {
-            final Object[] elements = queue.elements;
             final int length = elements.length;
-            final int size = queue.size;
-            final int head = queue.head;
 
-            if (head + size <= length) {
-                System.arraycopy(elements, i + 1, elements, i, size - 1 - (i - head));
+            if (head + size >= length && i < length - head) {
+                System.arraycopy(elements, head, elements, head + 1, i);
+                head = (head + 1) % length;
             } else {
-                // :NOTE: arraycopy
-                for (int j = i; j != (size + head) % length; j = (j + 1) % length) {
-                    elements[j] = elements[(j + 1) % length];
-                }
+                // :NOTE: arraycopy :FIXED:
+                System.arraycopy(elements, (head + i + 1) % length, elements, (head + i) % length, size - i);
             }
         }
     }
