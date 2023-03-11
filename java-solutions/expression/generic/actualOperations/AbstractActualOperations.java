@@ -5,8 +5,4 @@ public abstract class AbstractActualOperations<T extends Number & Comparable<T>>
     public boolean isStartOfConst(char ch) {
         return Character.isDigit(ch);
     }
-    @Override
-    public boolean isPartOfConst(char ch) {
-        return Character.isDigit(ch);
-    }
 }

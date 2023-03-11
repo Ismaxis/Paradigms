@@ -5,18 +5,22 @@ public class LongActualOperations extends AbstractActualOperations<Long> {
     public Long add(Long left, Long right) {
         return left + right;
     }
+
     @Override
     public Long subtract(Long left, Long right) {
         return left - right;
     }
+
     @Override
     public Long multiply(Long left, Long right) {
         return left * right;
     }
+
     @Override
     public Long divide(Long left, Long right) {
         return left / right;
     }
+
     @Override
     public Long mod(Long left, Long right) {
         return left % right;
@@ -26,6 +30,7 @@ public class LongActualOperations extends AbstractActualOperations<Long> {
     public Long negate(Long val) {
         return -val;
     }
+
     @Override
     public Long abs(Long val) {
         return Math.abs(val);
@@ -35,8 +40,9 @@ public class LongActualOperations extends AbstractActualOperations<Long> {
     public Long toConst(String str) {
         return Long.parseLong(str);
     }
+
     @Override
-    public Long toConst(int val) {
+    public Long fromIntToConst(int val) {
         return (long) val;
     }
 
