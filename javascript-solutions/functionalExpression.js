@@ -34,6 +34,8 @@ const isConst = str => !isNaN(str);
 const main = () => {
     const myPrintln = typeof(println) === 'undefined' ? str => console.log(str) : println;
     const eqRPN = "x x * 2 x * - 1 +";
+    const eq = add(subtract(multiply(variable('x'), variable('x')),
+            multiply(cnst(2), variable('x'))),cnst(1));
     myPrintln("f(x) = x^2 - 2x + 1 | (" + eqRPN + ")");
     const quadraticEquation = parse(eqRPN);
     const printForI = i => myPrintln("f(" + i + ") = " + quadraticEquation(i, 0, 0));
