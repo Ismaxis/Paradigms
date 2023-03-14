@@ -12,16 +12,24 @@ const subtract = operation((a, b) => a - b);
 const multiply = operation((a, b) => a * b);
 const divide = operation((a, b) => a / b);
 
-const variables = { 'x': variable('x'), 'y': variable('y'), 'z': variable('z') }
-const operations = { '+': add, '-': subtract, '*': multiply, '/': divide, "negate": negate }
+const madd = operation((a, b, c) => a*b + c)
+const floor = operation( a => Math.floor(a))
+const ceil = operation( a => Math.ceil(a))
+
+const one = cnst(1)
+const two = cnst(2)
+const literals = { 'x': variable('x'), 'y': variable('y'), 'z': variable('z'),
+    "one": one, "two": two }
+const operations = { '+': add, '-': subtract, '*': multiply, '/': divide, "negate": negate,
+                    "*+": madd, '_': floor, '^': ceil}
 const parse = str => {
     let stack = [];
     let tokens = str.split(' ').filter(token => token.length > 0);
     tokens.reduce((stack, token) => {
         if (isConst(token)) {
             stack.push(cnst(parseInt(token)));
-        } else if (token in variables) {
-            stack.push(variables[token]);
+        } else if (token in literals) {
+            stack.push(literals[token]);
         } else if (token in operations) {
             const op = operations[token];
             stack.push(op(...stack.splice(-op['argsCount'])));
@@ -32,13 +40,12 @@ const parse = str => {
 }
 const isConst = str => !isNaN(str);
 const main = () => {
-    const myPrintln = typeof(println) === 'undefined' ? str => console.log(str) : println;
     const eqRPN = "x x * 2 x * - 1 +";
     const eq = add(subtract(multiply(variable('x'), variable('x')),
             multiply(cnst(2), variable('x'))),cnst(1));
-    myPrintln("f(x) = x^2 - 2x + 1 | (" + eqRPN + ")");
+    println("f(x) = x^2 - 2x + 1 | (" + eqRPN + ")");
     const quadraticEquation = parse(eqRPN);
-    const printForI = i => myPrintln("f(" + i + ") = " + quadraticEquation(i, 0, 0));
+    const printForI = i => println("f(" + i + ") = " + quadraticEquation(i, 0, 0));
     [...Array(11).keys()].forEach(printForI);
 }
 main();
