@@ -139,16 +139,8 @@ public class ArrayQueue extends AbstractQueue {
         return new ArrayQueueIterator();
     }
 
-    // :NOTE: static :FIXED:
     protected class ArrayQueueIterator implements QueueIterator {
-        // :NOTE: access :FIXED:
         protected int i;
-
-        public ArrayQueueIterator() {
-            // :NOTE: i -- index :FIXED:
-            this.i = 0;
-        }
-
         @Override
         public Object getElement() {
             return elements[(head + i) % elements.length];
@@ -168,11 +160,10 @@ public class ArrayQueue extends AbstractQueue {
         public void removeCur() {
             final int length = elements.length;
 
-            if (head + size >= length && i < length - head) {
+            if (length <= head + size && head + i < length) {
                 System.arraycopy(elements, head, elements, head + 1, i);
                 head = (head + 1) % length;
             } else {
-                // :NOTE: arraycopy :FIXED:
                 System.arraycopy(elements, (head + i + 1) % length, elements, (head + i) % length, size - i);
             }
         }

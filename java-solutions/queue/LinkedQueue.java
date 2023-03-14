@@ -68,8 +68,8 @@ public class LinkedQueue extends AbstractQueue {
     protected QueueIterator getIterator() {
         return new LinkedQueueIterator();
     }
+
     protected class LinkedQueueIterator implements QueueIterator {
-        // :NOTE: access :FIXED:
         protected Node prevNode;
         protected Node curNode;
 
@@ -89,7 +89,6 @@ public class LinkedQueue extends AbstractQueue {
             curNode = curNode.getNext();
         }
 
-        // :NOTE: && prevNode.isEnd() :FIXED:
         @Override
         public boolean isEnd() {
             return curNode == null;

@@ -58,15 +58,16 @@ public interface Queue {
     // Pre: true
     // Post: n' = n &&
     //       immutable(n) &&
-    //       R = (exists i in [1; n] : a[i] == element)
+    //       R = (exists i in [1; n] : a[i] = element)
     boolean contains(Object element);
 
+    // :NOTE: ||
     // Pre: true
     // Post: Let r: contains(element)
     //       if (r):
     //          Let k:
-    // :NOTE: min :FIXED:
-    //              min(i in [1;n] : a[i] == element)
+    //                a[k] = element && forall i < k: a[i] != element
+    //                 min(i in [1;n] : a[i] == element)
     //          n' = n - 1 &&
     //          immutable(k - 1) &&
     //          for i in [k; n):
@@ -74,7 +75,6 @@ public interface Queue {
     //       else:
     //          n' = n &&
     //          immutable(n)
-    //
     //       R = r
     boolean removeFirstOccurrence(Object element);
 }

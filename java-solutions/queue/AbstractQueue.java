@@ -52,7 +52,7 @@ abstract public class AbstractQueue implements Queue {
 
     @Override
     public boolean contains(Object element) {
-        return !guard(element) && find(getIterator(), element);
+        return !guard(element) && getIterator().find(element);
     }
     @Override
     public boolean removeFirstOccurrence(Object element) {
@@ -61,7 +61,7 @@ abstract public class AbstractQueue implements Queue {
         }
 
         QueueIterator iter = getIterator();
-        if (find(iter, element)) {
+        if (iter.find(element)) {
             iter.removeCur();
             size--;
             return true;
@@ -74,17 +74,7 @@ abstract public class AbstractQueue implements Queue {
         return isEmpty() || element == null;
     }
 
-    protected static boolean find(QueueIterator iter, Object element) {
-        while (!iter.isEnd()) {
-            if (Objects.equals(iter.getElement(), element)) {
-                return true;
-            }
-            iter.inc();
-        }
-        return false;
-    }
-
-    abstract protected QueueIterator getIterator();
+    protected abstract QueueIterator getIterator();
 
     protected interface QueueIterator {
         Object getElement();
@@ -94,5 +84,15 @@ abstract public class AbstractQueue implements Queue {
         boolean isEnd();
 
         void removeCur();
+
+        default boolean find(Object element) {
+            while (!isEnd()) {
+                if (Objects.equals(getElement(), element)) {
+                    return true;
+                }
+                inc();
+            }
+            return false;
+        }
     }
 }
