@@ -1,20 +1,28 @@
-const Const = function(value) {
-    this.evaluate = function() {
-        return value;
-    }
-    this.toString = function() {
-        return value.toString();
-    }
+function Const(value) {
+    this.value = value;
+}
+Const.prototype.evaluate = function() {
+    return this.value;
+}
+Const.prototype.toString = function() {
+    return this.value.toString();
+}
+Const.prototype.diff = function() {
+    return new Const(0);
 }
 
 const variableSymbolsToIndex = { 'x': 0, 'y': 1, 'z': 2 };
-const Variable = function(symbol) {
-    this.evaluate = function(...values) {
-        return values[variableSymbolsToIndex[symbol]];
-    }
-    this.toString = function() {
-        return symbol.toString();
-    }
+function Variable(symbol) {
+    this.symbol = symbol;
+}
+Variable.prototype.evaluate = function(...values) {
+    return values[variableSymbolsToIndex[this.symbol]];
+}
+Variable.prototype.toString = function() {
+    return this.symbol.toString();
+}
+Variable.prototype.diff = function(varName) {
+    return new Const(this.symbol === varName ? 1 : 0);
 }
 
 function AbstractOperation(...children) {
@@ -35,6 +43,9 @@ Add.prototype.operation = function(a, b) {
     return a + b;
 }
 Add.prototype.symbol = '+';
+Add.prototype.diff = function(varName) {
+    return new Add(this.children[0].diff(varName), this.children[1].diff(varName));
+}
 
 function Subtract(left, right) {
     AbstractOperation.call(this, left, right);
@@ -44,6 +55,9 @@ Subtract.prototype.operation = function(a, b) {
     return a - b;
 }
 Subtract.prototype.symbol = '-';
+Subtract.prototype.diff = function(varName) {
+    return new Subtract(this.children[0].diff(varName), this.children[1].diff(varName));
+}
 
 function Multiply(left, right) {
     AbstractOperation.call(this, left, right);
@@ -53,6 +67,11 @@ Multiply.prototype.operation = function(a, b) {
     return a * b;
 }
 Multiply.prototype.symbol = '*';
+Multiply.prototype.diff = function(varName) {
+    return new Add(
+        new Multiply(this.children[0].diff(varName), this.children[1]),
+        new Multiply(this.children[0], this.children[1].diff(varName)));
+}
 
 function Divide(left, right) {
     AbstractOperation.call(this, left, right);
@@ -62,6 +81,13 @@ Divide.prototype.operation = function(a, b) {
     return a / b;
 }
 Divide.prototype.symbol = '/';
+Divide.prototype.diff = function(varName) {
+    return new Divide(
+        new Subtract(
+        new Multiply(this.children[0].diff(varName), this.children[1]),
+        new Multiply(this.children[0], this.children[1].diff(varName))),
+        new Multiply(this.children[1], this.children[1]));
+}
 
 function Negate(child) {
     AbstractOperation.call(this, child);
@@ -71,6 +97,9 @@ Negate.prototype.operation = function(a) {
     return -a;
 }
 Negate.prototype.symbol = 'negate';
+Negate.prototype.diff = function(varName) {
+    return new Negate(this.children[0].diff(varName));
+}
 
 const literals = { 'x': new Variable('x'), 'y': new Variable('y'), 'z': new Variable('z'), }
 const operations = { '+': Add, '-': Subtract, '*': Multiply, '/': Divide, "negate": Negate, }
