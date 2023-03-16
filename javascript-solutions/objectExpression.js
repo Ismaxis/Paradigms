@@ -25,81 +25,51 @@ Variable.prototype.diff = function(varName) {
     return new Const(this.symbol === varName ? 1 : 0);
 }
 
-function AbstractOperation(...children) {
-    this.children = children;
-}
-AbstractOperation.prototype.evaluate = function(...values) {
-    return this.operation(...this.children.map(x => x.evaluate(...values)));
-}
-AbstractOperation.prototype.toString = function() {
-    return this.children.map(x => x.toString()).reduce((acc, str) => acc + " " + str) + " " + this.symbol;
+function operationFabric(symbol, operation, diffRule) {
+    function AbstractOperation(...children) {
+        this.children = children;
+    }
+    AbstractOperation.getArgsCount = function() {
+        return operation.length;
+    }
+    AbstractOperation.prototype.evaluate = function(...values) {
+        return operation(...this.children.map(x => x.evaluate(...values)));
+    }
+    AbstractOperation.prototype.toString = function() {
+        return this.children.join(' ') + " " + symbol;
+    }
+    AbstractOperation.prototype.diff = function(varName) {
+        return diffRule(varName, ...this.children);
+    }
+
+    return AbstractOperation;
 }
 
-function Add(left, right) {
-    AbstractOperation.call(this, left, right);
-}
-Add.prototype = Object.create(AbstractOperation.prototype);
-Add.prototype.operation = function(a, b) {
-    return a + b;
-}
-Add.prototype.symbol = '+';
-Add.prototype.diff = function(varName) {
-    return new Add(this.children[0].diff(varName), this.children[1].diff(varName));
-}
+const Add = operationFabric('+',
+    (a, b) => a + b,
+    (varName, left, right) => new Add(left.diff(varName), right.diff(varName)));
 
-function Subtract(left, right) {
-    AbstractOperation.call(this, left, right);
-}
-Subtract.prototype = Object.create(AbstractOperation.prototype);
-Subtract.prototype.operation = function(a, b) {
-    return a - b;
-}
-Subtract.prototype.symbol = '-';
-Subtract.prototype.diff = function(varName) {
-    return new Subtract(this.children[0].diff(varName), this.children[1].diff(varName));
-}
+const Subtract = operationFabric('-',
+    (a, b) => a - b,
+    (varName, left, right) => new Subtract(left.diff(varName), right.diff(varName)));
 
-function Multiply(left, right) {
-    AbstractOperation.call(this, left, right);
-}
-Multiply.prototype = Object.create(AbstractOperation.prototype);
-Multiply.prototype.operation = function(a, b) {
-    return a * b;
-}
-Multiply.prototype.symbol = '*';
-Multiply.prototype.diff = function(varName) {
-    return new Add(
-        new Multiply(this.children[0].diff(varName), this.children[1]),
-        new Multiply(this.children[0], this.children[1].diff(varName)));
-}
+const Multiply = operationFabric('*',
+    (a, b) => a * b,
+    (varName, left, right) => new Add(
+        new Multiply(left.diff(varName), right),
+        new Multiply(left, right.diff(varName))));
 
-function Divide(left, right) {
-    AbstractOperation.call(this, left, right);
-}
-Divide.prototype = Object.create(AbstractOperation.prototype);
-Divide.prototype.operation = function(a, b) {
-    return a / b;
-}
-Divide.prototype.symbol = '/';
-Divide.prototype.diff = function(varName) {
-    return new Divide(
+const Divide = operationFabric('/',
+    (a, b) => a / b,
+    (varName, left, right) => new Divide(
         new Subtract(
-        new Multiply(this.children[0].diff(varName), this.children[1]),
-        new Multiply(this.children[0], this.children[1].diff(varName))),
-        new Multiply(this.children[1], this.children[1]));
-}
+            new Multiply(left.diff(varName), right),
+            new Multiply(left, right.diff(varName))),
+        new Multiply(right, right)));
 
-function Negate(child) {
-    AbstractOperation.call(this, child);
-}
-Negate.prototype = Object.create(AbstractOperation.prototype);
-Negate.prototype.operation = function(a) {
-    return -a;
-}
-Negate.prototype.symbol = 'negate';
-Negate.prototype.diff = function(varName) {
-    return new Negate(this.children[0].diff(varName));
-}
+const Negate = operationFabric('negate',
+    a => -a,
+    (varName, child) =>new Negate(child.diff(varName)));
 
 const literals = { 'x': new Variable('x'), 'y': new Variable('y'), 'z': new Variable('z'), }
 const operations = { '+': Add, '-': Subtract, '*': Multiply, '/': Divide, "negate": Negate, }
@@ -113,7 +83,7 @@ const parse = str => {
             stack.push(literals[token]);
         } else if (token in operations) {
             const op = operations[token];
-            stack.push(new op(...stack.splice(-op.length)));
+            stack.push(new op(...stack.splice(-op.getArgsCount())));
         }
         return stack
     }, stack)
@@ -121,5 +91,5 @@ const parse = str => {
 }
 const isConst = str => /^-?\d+$/.test(str);
 
-const exp = parse("x x 2 - * x * 1 +");
-console.log(exp.evaluate(5, 0, 0))
+const exp = parse('x y z * /');
+console.log(exp.evaluate(1, 1, 1))
