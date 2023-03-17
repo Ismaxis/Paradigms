@@ -37,6 +37,16 @@ Variable.prototype.getFactors = function() {
     return [this];
 }
 
+function isConstantValue(element, value) {
+    return element instanceof Const && element.value === value;
+}
+function isZero(element) {
+    return isConstantValue(element, 0);
+}
+function isOne(element) {
+    return isConstantValue(element, 1);
+}
+
 function operationFactory(symbol, operation, diffRule) {
     function AbstractOperation(...children) {
         this.children = children;
@@ -82,9 +92,9 @@ const Add = operationFactory('+',
     (a, b) => a + b,
     (varName, left, right) => new Add(left.diff(varName), right.diff(varName)));
 Add.prototype.simplifySpecificRules = function(leftSimplified, rightSimplified) {
-    if (leftSimplified instanceof Const && leftSimplified.value === 0) {
+    if (isZero(leftSimplified)) {
         return rightSimplified;
-    } else if (rightSimplified instanceof Const && rightSimplified.value === 0) {
+    } else if (isZero(rightSimplified)) {
         return leftSimplified;
     } else {
         return new Add(leftSimplified, rightSimplified);
@@ -95,9 +105,9 @@ const Subtract = operationFactory('-',
     (a, b) => a - b,
     (varName, left, right) => new Subtract(left.diff(varName), right.diff(varName)));
 Subtract.prototype.simplifySpecificRules = function(leftSimplified, rightSimplified) {
-    if (leftSimplified instanceof Const && leftSimplified.value === 0) {
+    if (isZero(leftSimplified)) {
         return new Negate(rightSimplified).simplify();
-    } else if (rightSimplified instanceof Const && rightSimplified.value === 0) {
+    } else if (isZero(rightSimplified)) {
         return leftSimplified;
     } else {
         return new Subtract(leftSimplified, rightSimplified);
@@ -109,13 +119,13 @@ const Multiply = operationFactory('*',
     (varName, left, right) => new Add(
         new Multiply(left.diff(varName), right),
         new Multiply(left, right.diff(varName))));
+
 Multiply.prototype.simplifySpecificRules = function(leftSimplified, rightSimplified) {
-    if (leftSimplified instanceof Const && leftSimplified.value === 0 ||
-        rightSimplified instanceof Const && rightSimplified.value === 0) {
+    if (isZero(leftSimplified) || isZero(rightSimplified)) {
         return new Const(0);
-    } else if (leftSimplified instanceof Const && leftSimplified.value === 1) {
+    } else if (isOne(leftSimplified)) {
         return rightSimplified;
-    } else if (rightSimplified instanceof Const && rightSimplified.value === 1) {
+    } else if (isOne(rightSimplified)) {
         return leftSimplified;
     } else {
         return new Multiply(leftSimplified, rightSimplified);
@@ -162,11 +172,9 @@ Divide.prototype.buildTreeFromFactors = function(factors) {
     }
 }
 Divide.prototype.simplifySpecificRules = function(leftSimplified, rightSimplified) {
-    if (leftSimplified instanceof Const && leftSimplified.value === 0) {
+    if (isZero(leftSimplified)) {
         return new Const(0);
-    } else if (rightSimplified instanceof Const && rightSimplified.value === 0) {
-        return new Const(leftSimplified > 0 ? 1 : -1 * Infinity);
-    } else if (rightSimplified instanceof Const && rightSimplified.value === 1) {
+    } else if (isOne(rightSimplified)) {
         return leftSimplified;
     } else {
         const leftFactors = leftSimplified.getFactors();
@@ -189,7 +197,6 @@ Divide.prototype.simplifySpecificRules = function(leftSimplified, rightSimplifie
         const rightTree = this.buildTreeFromFactors(rightFactors);
 
         return new Divide(leftTree, rightTree);
-        // return new Divide(leftSimplified, rightSimplified);
     }
 }
 
@@ -217,7 +224,7 @@ const parse = str => {
 }
 const isConst = str => /^-?\d+$/.test(str);
 
-const exp = new Divide(new Negate(new Variable('x')), new Const(2)).diff('x');
+const exp =new Divide(new Variable('x'), new Multiply(new Variable('y'), new Variable('z'))).diff('x');
 // const exp = parse("x 2 x * -");
 const expSimp = exp.simplify();
 console.log(exp.toString());
