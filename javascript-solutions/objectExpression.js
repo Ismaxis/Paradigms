@@ -7,14 +7,17 @@ Const.prototype.evaluate = function() {
 Const.prototype.toString = function() {
     return this.value.toString();
 }
+Const.prototype.equals = function(that) {
+    return that instanceof Const && this.value === that.value;
+}
 Const.prototype.diff = function() {
     return new Const(0);
 }
 Const.prototype.simplify = function() {
-    return new this.constructor(this.value);
+    return this;
 }
 Const.prototype.getFactors = function() {
-    return [new this.constructor(this.value)];
+    return [this];
 }
 
 const variableSymbolsToIndex = { 'x': 0, 'y': 1, 'z': 2 };
@@ -27,14 +30,17 @@ Variable.prototype.evaluate = function(...values) {
 Variable.prototype.toString = function() {
     return this.symbol.toString();
 }
+Variable.prototype.equals = function(that) {
+    return that instanceof Variable && this.symbol === that.symbol;
+}
 Variable.prototype.diff = function(varName) {
     return new Const(this.symbol === varName ? 1 : 0);
 }
 Variable.prototype.simplify = function() {
-    return new this.constructor(this.symbol);
+    return this;
 }
 Variable.prototype.getFactors = function() {
-    return [new this.constructor(this.symbol)];
+    return [this];
 }
 
 function operationFabric(symbol, operation, diffRule) {
@@ -49,7 +55,8 @@ function operationFabric(symbol, operation, diffRule) {
         return operation(...values);
     }
     AbstractOperation.prototype.evaluate = function(...values) {
-        return this.operation(...this.children.map(x => x.evaluate(...values)));
+        const chEval = this.children.map(x => x.evaluate(...values))
+        return this.operation(...chEval);
     }
     AbstractOperation.prototype.toString = function() {
         return this.children.join(' ') + " " + symbol;
@@ -73,6 +80,54 @@ function operationFabric(symbol, operation, diffRule) {
 
     return AbstractOperation;
 }
+
+const Pow = operationFabric("pow",
+    (base, power) => Math.pow(base, power),
+    (varName, base, power) => new Multiply(
+        new Pow(base, power),
+        new Add(
+            new Divide(
+                new Multiply(
+                    power,
+                    base.diff(varName)
+                ),
+                base
+            ),
+            new Multiply(
+                new Log(new Const(Math.E), base),
+                power.diff(varName)
+            )
+        )
+    ));
+
+const Log = operationFabric("log",
+    (base, x) => Math.log(Math.abs(x)) / Math.log(Math.abs(base)),
+    (varName, base, x) => {
+    const absX = new Abs(x);
+    const absBase = new Abs(base);
+    return new Divide(
+        new Subtract(
+            new Multiply(
+                new Divide(
+                    absX.diff(varName),
+                    absX
+                ),
+                new Log(new Const(Math.E), absBase)
+            ),
+            new Multiply(
+                new Divide(
+                    absBase.diff(varName),
+                    absBase
+                ),
+                new Log(new Const(Math.E), absX)
+            )
+        ),
+        new Multiply(
+            new Log(new Const(Math.E), absBase),
+            new Log(new Const(Math.E), absBase)
+        )
+    )
+});
 
 const Add = operationFabric('+',
     (a, b) => a + b,
@@ -172,7 +227,7 @@ Divide.prototype.simplifySpecificRules = function(leftSimplified, rightSimplifie
             const leftFactor = leftFactors[i];
             for (let j = 0; j < rightFactors.length; j++) {
                 const rightFactor = rightFactors[j];
-                if (leftFactor === rightFactor) {
+                if (leftFactor === rightFactor) {//} || leftFactor.equals(rightFactor)) {
                     leftFactors.splice(i, 1);
                     rightFactors.splice(j, 1);
                     i--;
@@ -185,13 +240,12 @@ Divide.prototype.simplifySpecificRules = function(leftSimplified, rightSimplifie
         const rightTree = this.buildTreeFromFactors(rightFactors);
 
         return new Divide(leftTree, rightTree);
-        // return new Divide(leftSimplified, rightSimplified);
     }
 }
 
-const Negate = operationFabric('negate',
+const Negate = operationFabric("negate",
     a => -a,
-    (varName, child) =>new Negate(child.diff(varName)));
+    (varName, child) => new Negate(child.diff(varName)));
 Negate.prototype.simplify = function() {
     const childSimplified = this.children[0].simplify();
     if (childSimplified instanceof Const) {
@@ -201,8 +255,21 @@ Negate.prototype.simplify = function() {
     }
 }
 
+const Abs = operationFabric("abs",
+    a => Math.abs(a),
+    (varName, child) => new Multiply(
+        new Sgn(child),
+        child.diff(varName)
+    )
+)
+const Sgn = operationFabric("sgn",
+    a => a === 0 ? 0 : (a > 0 ? 1 : -1),
+    (varName, child) => new Const(0)
+)
+
 const literals = { 'x': new Variable('x'), 'y': new Variable('y'), 'z': new Variable('z'), }
-const operations = { '+': Add, '-': Subtract, '*': Multiply, '/': Divide, "negate": Negate, }
+const operations = { '+': Add, '-': Subtract, '*': Multiply, '/': Divide, "negate": Negate,
+                     "pow": Pow, "log": Log, }
 const parse = str => {
     let stack = [];
     let tokens = str.split(' ').filter(token => token.length > 0);
@@ -221,8 +288,7 @@ const parse = str => {
 }
 const isConst = str => /^-?\d+$/.test(str);
 
-// const exp = new Divide(new Const(5), new Variable('z')).diff('z');
-const exp = parse("x 2 x * -");
+const exp = new Divide(new Variable('x'), new Multiply(new Variable('y'), new Variable('z'))).diff('x');
 const expSimp = exp.simplify();
 console.log(exp.toString());
 console.log(expSimp.toString());
