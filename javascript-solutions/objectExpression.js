@@ -11,10 +11,10 @@ Const.prototype.diff = function() {
     return new Const(0);
 }
 Const.prototype.simplify = function() {
-    return new this.constructor(this.value);
+    return this;
 }
 Const.prototype.getFactors = function() {
-    return [new this.constructor(this.value)];
+    return [this];
 }
 
 const variableSymbolsToIndex = { 'x': 0, 'y': 1, 'z': 2 };
@@ -31,13 +31,13 @@ Variable.prototype.diff = function(varName) {
     return new Const(this.symbol === varName ? 1 : 0);
 }
 Variable.prototype.simplify = function() {
-    return new this.constructor(this.symbol);
+    return this;
 }
 Variable.prototype.getFactors = function() {
-    return [new this.constructor(this.symbol)];
+    return [this];
 }
 
-function operationFabric(symbol, operation, diffRule) {
+function operationFactory(symbol, operation, diffRule) {
     function AbstractOperation(...children) {
         this.children = children;
         this.symbol = symbol; // TODO: temp
@@ -58,15 +58,19 @@ function operationFabric(symbol, operation, diffRule) {
         return diffRule(varName, ...this.children);
     }
     AbstractOperation.prototype.simplify = function() {
-        const leftSimplified = this.children[0].simplify();
-        const rightSimplified = this.children[1].simplify();
-        // Common rules
-        if (leftSimplified instanceof Const && rightSimplified instanceof Const) {
-            return new Const(this.operation(leftSimplified.value, rightSimplified.value))
-        } else {
-            return this.simplifySpecificRules(leftSimplified, rightSimplified);
+        const childrenSimplified = this.children.map(child => child.simplify());
+        for (const childSimplified of childrenSimplified) {
+            if (!(childSimplified instanceof Const)) {
+                if (this.simplifySpecificRules !== undefined) {
+                    return this.simplifySpecificRules(...childrenSimplified);
+                } else {
+                    return new this.constructor(...childrenSimplified);
+                }
+            }
         }
+        return new Const(this.operation(...childrenSimplified.map(child => child.value)))
     }
+
     AbstractOperation.prototype.getFactors = function() {
         return [new this.constructor(...this.children)];
     }
@@ -74,7 +78,7 @@ function operationFabric(symbol, operation, diffRule) {
     return AbstractOperation;
 }
 
-const Add = operationFabric('+',
+const Add = operationFactory('+',
     (a, b) => a + b,
     (varName, left, right) => new Add(left.diff(varName), right.diff(varName)));
 Add.prototype.simplifySpecificRules = function(leftSimplified, rightSimplified) {
@@ -87,7 +91,7 @@ Add.prototype.simplifySpecificRules = function(leftSimplified, rightSimplified) 
     }
 }
 
-const Subtract = operationFabric('-',
+const Subtract = operationFactory('-',
     (a, b) => a - b,
     (varName, left, right) => new Subtract(left.diff(varName), right.diff(varName)));
 Subtract.prototype.simplifySpecificRules = function(leftSimplified, rightSimplified) {
@@ -100,7 +104,7 @@ Subtract.prototype.simplifySpecificRules = function(leftSimplified, rightSimplif
     }
 }
 
-const Multiply = operationFabric('*',
+const Multiply = operationFactory('*',
     (a, b) => a * b,
     (varName, left, right) => new Add(
         new Multiply(left.diff(varName), right),
@@ -137,7 +141,7 @@ Multiply.prototype.getFactors = function() {
     return arr;
 }
 
-const Divide = operationFabric('/',
+const Divide = operationFactory('/',
     (a, b) => a / b,
     (varName, left, right) => new Divide(
         new Subtract(
@@ -189,17 +193,9 @@ Divide.prototype.simplifySpecificRules = function(leftSimplified, rightSimplifie
     }
 }
 
-const Negate = operationFabric('negate',
+const Negate = operationFactory('negate',
     a => -a,
     (varName, child) =>new Negate(child.diff(varName)));
-Negate.prototype.simplify = function() {
-    const childSimplified = this.children[0].simplify();
-    if (childSimplified instanceof Const) {
-        return new Const(this.operation(childSimplified.value))
-    } else {
-        return new Negate(childSimplified);
-    }
-}
 
 const literals = { 'x': new Variable('x'), 'y': new Variable('y'), 'z': new Variable('z'), }
 const operations = { '+': Add, '-': Subtract, '*': Multiply, '/': Divide, "negate": Negate, }
@@ -221,8 +217,8 @@ const parse = str => {
 }
 const isConst = str => /^-?\d+$/.test(str);
 
-// const exp = new Divide(new Const(5), new Variable('z')).diff('z');
-const exp = parse("x 2 x * -");
+const exp = new Divide(new Negate(new Variable('x')), new Const(2)).diff('x');
+// const exp = parse("x 2 x * -");
 const expSimp = exp.simplify();
 console.log(exp.toString());
 console.log(expSimp.toString());
