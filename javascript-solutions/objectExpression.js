@@ -8,7 +8,7 @@ Const.prototype.toString = function() {
     return this.value.toString();
 }
 Const.prototype.diff = function() {
-    return new Const(0);
+    return ZERO;
 }
 Const.prototype.simplify = function() {
     return this;
@@ -16,6 +16,20 @@ Const.prototype.simplify = function() {
 Const.prototype.getFactors = function() {
     return [this];
 }
+
+const ZERO = new Const(0);
+const ONE = new Const(1);
+
+function isConstantValue(element, value) {
+    return element instanceof Const && element.value === value;
+}
+function isZero(element) {
+    return isConstantValue(element, 0);
+}
+function isOne(element) {
+    return isConstantValue(element, 1);
+}
+
 
 const variableSymbolsToIndex = { 'x': 0, 'y': 1, 'z': 2 };
 function Variable(symbol) {
@@ -37,20 +51,15 @@ Variable.prototype.getFactors = function() {
     return [this];
 }
 
-function isConstantValue(element, value) {
-    return element instanceof Const && element.value === value;
-}
-function isZero(element) {
-    return isConstantValue(element, 0);
-}
-function isOne(element) {
-    return isConstantValue(element, 1);
-}
-
-function operationFactory(symbol, operation, diffRule) {
-    function AbstractOperation(...children) {
-        this.children = children;
+function operationFactory(symbol, operation, diffRule, simplifySpecificRules) {
+    function AbstractOperation(...operands) {
+        this.getOperands = function() {
+            return operands;
+        }
         this.symbol = symbol; // TODO: temp
+    }
+    AbstractOperation.prototype.getOperand = function(i) {
+        return this.getOperands()[i];
     }
     AbstractOperation.getArgsCount = function() {
         return operation.length;
@@ -59,30 +68,30 @@ function operationFactory(symbol, operation, diffRule) {
         return operation(...values);
     }
     AbstractOperation.prototype.evaluate = function(...values) {
-        return this.operation(...this.children.map(x => x.evaluate(...values)));
+        return this.operation(...this.getOperands().map(x => x.evaluate(...values)));
     }
     AbstractOperation.prototype.toString = function() {
-        return this.children.join(' ') + " " + symbol;
+        return this.getOperands().join(' ') + " " + symbol;
     }
     AbstractOperation.prototype.diff = function(varName) {
-        return diffRule(varName, ...this.children);
+        return diffRule(varName, ...this.getOperands());
     }
     AbstractOperation.prototype.simplify = function() {
-        const childrenSimplified = this.children.map(child => child.simplify());
-        for (const childSimplified of childrenSimplified) {
-            if (!(childSimplified instanceof Const)) {
-                if (this.simplifySpecificRules !== undefined) {
-                    return this.simplifySpecificRules(...childrenSimplified);
+        const operandsSimplified = this.getOperands().map(operand => operand.simplify());
+        for (const operandSimplified of operandsSimplified) {
+            if (!(operandSimplified instanceof Const)) {
+                if (simplifySpecificRules !== undefined) {
+                    return simplifySpecificRules(...operandsSimplified);
                 } else {
-                    return new this.constructor(...childrenSimplified);
+                    return new this.constructor(...operandsSimplified);
                 }
             }
         }
-        return new Const(this.operation(...childrenSimplified.map(child => child.value)))
+        return new Const(this.operation(...operandsSimplified.map(operand => operand.value)))
     }
 
     AbstractOperation.prototype.getFactors = function() {
-        return [new this.constructor(...this.children)];
+        return [new this.constructor(...this.getOperands())];
     }
 
     return AbstractOperation;
@@ -90,55 +99,57 @@ function operationFactory(symbol, operation, diffRule) {
 
 const Add = operationFactory('+',
     (a, b) => a + b,
-    (varName, left, right) => new Add(left.diff(varName), right.diff(varName)));
-Add.prototype.simplifySpecificRules = function(leftSimplified, rightSimplified) {
-    if (isZero(leftSimplified)) {
-        return rightSimplified;
-    } else if (isZero(rightSimplified)) {
-        return leftSimplified;
-    } else {
-        return new Add(leftSimplified, rightSimplified);
+    (varName, left, right) => new Add(left.diff(varName), right.diff(varName)),
+    function(leftSimplified, rightSimplified) {
+        if (isZero(leftSimplified)) {
+            return rightSimplified;
+        } else if (isZero(rightSimplified)) {
+            return leftSimplified;
+        } else {
+            return new Add(leftSimplified, rightSimplified);
+        }
     }
-}
+);
 
 const Subtract = operationFactory('-',
     (a, b) => a - b,
-    (varName, left, right) => new Subtract(left.diff(varName), right.diff(varName)));
-Subtract.prototype.simplifySpecificRules = function(leftSimplified, rightSimplified) {
-    if (isZero(leftSimplified)) {
-        return new Negate(rightSimplified).simplify();
-    } else if (isZero(rightSimplified)) {
-        return leftSimplified;
-    } else {
-        return new Subtract(leftSimplified, rightSimplified);
+    (varName, left, right) => new Subtract(left.diff(varName), right.diff(varName)),
+    function(leftSimplified, rightSimplified) {
+        if (isZero(leftSimplified)) {
+            return new Negate(rightSimplified).simplify();
+        } else if (isZero(rightSimplified)) {
+            return leftSimplified;
+        } else {
+            return new Subtract(leftSimplified, rightSimplified);
+        }
     }
-}
+);
 
 const Multiply = operationFactory('*',
     (a, b) => a * b,
     (varName, left, right) => new Add(
         new Multiply(left.diff(varName), right),
-        new Multiply(left, right.diff(varName))));
-
-Multiply.prototype.simplifySpecificRules = function(leftSimplified, rightSimplified) {
-    if (isZero(leftSimplified) || isZero(rightSimplified)) {
-        return new Const(0);
-    } else if (isOne(leftSimplified)) {
-        return rightSimplified;
-    } else if (isOne(rightSimplified)) {
-        return leftSimplified;
-    } else {
-        return new Multiply(leftSimplified, rightSimplified);
+        new Multiply(left, right.diff(varName))),
+    function(leftSimplified, rightSimplified) {
+        if (isZero(leftSimplified) || isZero(rightSimplified)) {
+            return ZERO;
+        } else if (isOne(leftSimplified)) {
+            return rightSimplified;
+        } else if (isOne(rightSimplified)) {
+            return leftSimplified;
+        } else {
+            return new Multiply(leftSimplified, rightSimplified);
+        }
     }
-}
-Multiply.prototype.getFactorsImpl = function(arr, elem) {
+);
+function getFactorsRecur(arr, elem) {
     if (elem instanceof Multiply) {
         arr.push(...elem.getFactors());
     } else if (elem instanceof Divide) {
-        arr.push(...elem.children[0].getFactors());
-        const denominatorStraighten = elem.children[1].getFactors();
+        arr.push(...elem.getOperand(0).getFactors());
+        const denominatorStraighten = elem.getOperand(1).getFactors();
         for (const element of denominatorStraighten) {
-            arr.push(new Divide(new Const(1), element));
+            arr.push(new Divide(ONE, element));
         }
     } else {
         arr.push(elem);
@@ -146,19 +157,12 @@ Multiply.prototype.getFactorsImpl = function(arr, elem) {
 }
 Multiply.prototype.getFactors = function() {
     const arr = [];
-    this.getFactorsImpl(arr, this.children[0]);
-    this.getFactorsImpl(arr, this.children[1]);
+    getFactorsRecur(arr, this.getOperand(0));
+    getFactorsRecur(arr, this.getOperand(1));
     return arr;
 }
 
-const Divide = operationFactory('/',
-    (a, b) => a / b,
-    (varName, left, right) => new Divide(
-        new Subtract(
-            new Multiply(left.diff(varName), right),
-            new Multiply(left, right.diff(varName))),
-        new Multiply(right, right)));
-Divide.prototype.buildTreeFromFactors = function(factors) {
+function buildTreeFromFactors(factors) {
     if (factors.length > 1) {
         let curMul = new Multiply(factors[0], factors[1]);
         for (let i = 2; i < factors.length; i++) {
@@ -168,41 +172,49 @@ Divide.prototype.buildTreeFromFactors = function(factors) {
     } else if (factors.length === 1) {
         return factors[0]
     } else {
-        return new Const(1);
+        return ONE;
     }
 }
-Divide.prototype.simplifySpecificRules = function(leftSimplified, rightSimplified) {
-    if (isZero(leftSimplified)) {
-        return new Const(0);
-    } else if (isOne(rightSimplified)) {
-        return leftSimplified;
-    } else {
-        const leftFactors = leftSimplified.getFactors();
-        const rightFactors = rightSimplified.getFactors();
-        // reduce common multipliers
-        for (let i = 0; i < leftFactors.length; i++) {
-            const leftFactor = leftFactors[i];
-            for (let j = 0; j < rightFactors.length; j++) {
-                const rightFactor = rightFactors[j];
-                if (leftFactor === rightFactor) {
-                    leftFactors.splice(i, 1);
-                    rightFactors.splice(j, 1);
-                    i--;
-                    break;
+
+const Divide = operationFactory('/',
+    (a, b) => a / b,
+    (varName, left, right) => new Divide(
+        new Subtract(
+            new Multiply(left.diff(varName), right),
+            new Multiply(left, right.diff(varName))),
+        new Multiply(right, right)),
+    function(leftSimplified, rightSimplified) {
+        if (isZero(leftSimplified)) {
+            return ZERO;
+        } else if (isOne(rightSimplified)) {
+            return leftSimplified;
+        } else {
+            const leftFactors = leftSimplified.getFactors();
+            const rightFactors = rightSimplified.getFactors();
+            for (let i = 0; i < leftFactors.length; i++) {
+                const leftFactor = leftFactors[i];
+                for (let j = 0; j < rightFactors.length; j++) {
+                    const rightFactor = rightFactors[j];
+                    if (leftFactor === rightFactor) {
+                        leftFactors.splice(i, 1);
+                        rightFactors.splice(j, 1);
+                        i--;
+                        break;
+                    }
                 }
             }
-        }
-        // build multiply tree back
-        const leftTree = this.buildTreeFromFactors(leftFactors);
-        const rightTree = this.buildTreeFromFactors(rightFactors);
 
-        return new Divide(leftTree, rightTree);
+            const leftTree = buildTreeFromFactors(leftFactors);
+            const rightTree = buildTreeFromFactors(rightFactors);
+
+            return new Divide(leftTree, rightTree);
+        }
     }
-}
+);
 
 const Negate = operationFactory('negate',
     a => -a,
-    (varName, child) =>new Negate(child.diff(varName)));
+    (varName, operand) =>new Negate(operand.diff(varName)));
 
 const literals = { 'x': new Variable('x'), 'y': new Variable('y'), 'z': new Variable('z'), }
 const operations = { '+': Add, '-': Subtract, '*': Multiply, '/': Divide, "negate": Negate, }
