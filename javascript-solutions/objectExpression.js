@@ -99,6 +99,17 @@ const Pow = operationFabric("pow",
             )
         )
     ));
+Pow.prototype.simplifySpecificRules = function(leftSimplified, rightSimplified) {
+    if (leftSimplified instanceof Const && leftSimplified.value === 1 || leftSimplified.value === 0) {
+        return new Const(leftSimplified.value);
+    } else if (rightSimplified instanceof Const && leftSimplified.value === 0) {
+        return new Const(1);
+    } else if (rightSimplified instanceof Const && leftSimplified.value === 1) {
+        return leftSimplified;
+    } else {
+        return new Pow(leftSimplified, rightSimplified);
+    }
+}
 
 const Log = operationFabric("log",
     (base, x) => Math.log(Math.abs(x)) / Math.log(Math.abs(base)),
@@ -128,6 +139,13 @@ const Log = operationFabric("log",
         )
     )
 });
+Log.prototype.simplifySpecificRules = function(leftSimplified, rightSimplified) {
+    if (rightSimplified instanceof Const && rightSimplified.value === 1) {
+        return new Const(0);
+    } else {
+        return new Log(leftSimplified, rightSimplified);
+    }
+}
 
 const Add = operationFabric('+',
     (a, b) => a + b,
@@ -168,9 +186,24 @@ Multiply.prototype.simplifySpecificRules = function(leftSimplified, rightSimplif
         return rightSimplified;
     } else if (rightSimplified instanceof Const && rightSimplified.value === 1) {
         return leftSimplified;
-    } else {
-        return new Multiply(leftSimplified, rightSimplified);
+    } else if (leftSimplified instanceof Pow) {
+        const powBase = leftSimplified.children[0];
+        const rightFactors = rightSimplified.getFactors();
+        let power = 0;
+        for (let i = 0; i < rightFactors.length; i++) {
+            if (rightFactors[i] === powBase) {
+                rightFactors.splice(i, 1);
+                power++;
+                i--;
+            }
+        }
+        const rightTree = buildTreeFromFactors(rightFactors);
+        if (power > 0) {
+            return new Multiply(
+                new Pow(leftSimplified.children[0], new Add(leftSimplified.children[1], new Add(power))), rightTree);
+        }
     }
+    return new Multiply(leftSimplified, rightSimplified);
 }
 Multiply.prototype.getFactorsImpl = function(arr, elem) {
     if (elem instanceof Multiply) {
@@ -192,14 +225,7 @@ Multiply.prototype.getFactors = function() {
     return arr;
 }
 
-const Divide = operationFabric('/',
-    (a, b) => a / b,
-    (varName, left, right) => new Divide(
-        new Subtract(
-            new Multiply(left.diff(varName), right),
-            new Multiply(left, right.diff(varName))),
-        new Multiply(right, right)));
-Divide.prototype.buildTreeFromFactors = function(factors) {
+function buildTreeFromFactors(factors) {
     if (factors.length > 1) {
         let curMul = new Multiply(factors[0], factors[1]);
         for (let i = 2; i < factors.length; i++) {
@@ -212,11 +238,19 @@ Divide.prototype.buildTreeFromFactors = function(factors) {
         return new Const(1);
     }
 }
+
+const Divide = operationFabric('/',
+    (a, b) => a / b,
+    (varName, left, right) => new Divide(
+        new Subtract(
+            new Multiply(left.diff(varName), right),
+            new Multiply(left, right.diff(varName))),
+        new Multiply(right, right)));
 Divide.prototype.simplifySpecificRules = function(leftSimplified, rightSimplified) {
     if (leftSimplified instanceof Const && leftSimplified.value === 0) {
         return new Const(0);
-    } else if (rightSimplified instanceof Const && rightSimplified.value === 0) {
-        return new Const(leftSimplified > 0 ? 1 : -1 * Infinity);
+    // } else if (rightSimplified instanceof Const && rightSimplified.value === 0) {
+    //     return new Const(leftSimplified > 0 ? 1 : -1 * Infinity);
     } else if (rightSimplified instanceof Const && rightSimplified.value === 1) {
         return leftSimplified;
     } else {
@@ -236,8 +270,8 @@ Divide.prototype.simplifySpecificRules = function(leftSimplified, rightSimplifie
             }
         }
         // build multiply tree back
-        const leftTree = this.buildTreeFromFactors(leftFactors);
-        const rightTree = this.buildTreeFromFactors(rightFactors);
+        const leftTree = buildTreeFromFactors(leftFactors);
+        const rightTree = buildTreeFromFactors(rightFactors);
 
         return new Divide(leftTree, rightTree);
     }
@@ -262,10 +296,27 @@ const Abs = operationFabric("abs",
         child.diff(varName)
     )
 )
+Abs.prototype.simplify = function() {
+    const childSimplified = this.children[0].simplify();
+    if (childSimplified instanceof Const) {
+        return new Const(this.operation(childSimplified.value))
+    } else {
+        return new Abs(childSimplified);
+    }
+}
+
 const Sgn = operationFabric("sgn",
     a => a === 0 ? 0 : (a > 0 ? 1 : -1),
     (varName, child) => new Const(0)
 )
+Sgn.prototype.simplify = function() {
+    const childSimplified = this.children[0].simplify();
+    if (childSimplified instanceof Const) {
+        return new Const(this.operation(childSimplified.value))
+    } else {
+        return new Sgn(childSimplified);
+    }
+}
 
 const literals = { 'x': new Variable('x'), 'y': new Variable('y'), 'z': new Variable('z'), }
 const operations = { '+': Add, '-': Subtract, '*': Multiply, '/': Divide, "negate": Negate,
@@ -288,7 +339,8 @@ const parse = str => {
 }
 const isConst = str => /^-?\d+$/.test(str);
 
-const exp = new Divide(new Variable('x'), new Multiply(new Variable('y'), new Variable('z'))).diff('x');
+const exp = new Pow(new Variable('x'), new Const(3)).diff('x');
 const expSimp = exp.simplify();
 console.log(exp.toString());
 console.log(expSimp.toString());
+console.log(expSimp.evaluate(0,0,0))
