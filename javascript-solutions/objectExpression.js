@@ -30,7 +30,6 @@ function isOne(element) {
     return isConstantValue(element, 1);
 }
 
-
 const variableSymbolsToIndex = { 'x': 0, 'y': 1, 'z': 2 };
 function Variable(symbol) {
     this.symbol = symbol;
@@ -51,50 +50,57 @@ Variable.prototype.getFactors = function() {
     return [this];
 }
 
-function operationFactory(symbol, operation, diffRule, simplifySpecificRules) {
-    function AbstractOperation(...operands) {
-        this.getOperands = function() {
-            return operands;
-        }
-        this.symbol = symbol; // TODO: temp
+function AbstractOperation(...operands) {
+    this.getOperands = function() {
+        return operands;
     }
-    AbstractOperation.prototype.getOperand = function(i) {
-        return this.getOperands()[i];
-    }
-    AbstractOperation.getArgsCount = function() {
-        return operation.length;
-    }
-    AbstractOperation.prototype.operation = function(...values) {
-        return operation(...values);
-    }
-    AbstractOperation.prototype.evaluate = function(...values) {
-        return this.operation(...this.getOperands().map(x => x.evaluate(...values)));
-    }
-    AbstractOperation.prototype.toString = function() {
-        return this.getOperands().join(' ') + " " + symbol;
-    }
-    AbstractOperation.prototype.diff = function(varName) {
-        return diffRule(varName, ...this.getOperands());
-    }
-    AbstractOperation.prototype.simplify = function() {
-        const operandsSimplified = this.getOperands().map(operand => operand.simplify());
-        for (const operandSimplified of operandsSimplified) {
-            if (!(operandSimplified instanceof Const)) {
-                if (simplifySpecificRules !== undefined) {
-                    return simplifySpecificRules(...operandsSimplified);
-                } else {
-                    return new this.constructor(...operandsSimplified);
-                }
+}
+AbstractOperation.prototype.getOperand = function(i) {
+    return this.getOperands()[i];
+}
+AbstractOperation.prototype.operation = function(...values) {
+    return this.operation(...values);
+}
+AbstractOperation.prototype.evaluate = function(...values) {
+    return this.operation(...this.getOperands().map(x => x.evaluate(...values)));
+}
+AbstractOperation.prototype.toString = function() {
+    return this.getOperands().join(' ') + " " + this.symbol;
+}
+AbstractOperation.prototype.diff = function(varName) {
+    return this.diffRule(varName, ...this.getOperands());
+}
+AbstractOperation.prototype.simplify = function() {
+    const operandsSimplified = this.getOperands().map(operand => operand.simplify());
+    for (const operandSimplified of operandsSimplified) {
+        if (!(operandSimplified instanceof Const)) {
+            if (this.simplifySpecificRules !== undefined) {
+                return this.simplifySpecificRules(...operandsSimplified);
+            } else {
+                return new this.constructor(...operandsSimplified);
             }
         }
-        return new Const(this.operation(...operandsSimplified.map(operand => operand.value)))
     }
+    return new Const(this.operation(...operandsSimplified.map(operand => operand.value)))
+}
+AbstractOperation.prototype.getFactors = function() {
+    return [new this.constructor(...this.getOperands())];
+}
 
-    AbstractOperation.prototype.getFactors = function() {
-        return [new this.constructor(...this.getOperands())];
+function operationFactory(symbol, operation, diffRule, simplifySpecificRules) {
+    function Operation (...operands) {
+        AbstractOperation.call(this, ...operands);
     }
-
-    return AbstractOperation;
+    Operation.getArgsCount = function() {
+        return operation.length;
+    }
+    Operation.prototype = Object.create(AbstractOperation.prototype);
+    Operation.prototype.constructor = Operation;
+    Operation.prototype.symbol = symbol;
+    Operation.prototype.operation = operation;
+    Operation.prototype.diffRule = diffRule;
+    Operation.prototype.simplifySpecificRules = simplifySpecificRules;
+    return Operation;
 }
 
 const Add = operationFactory('+',
@@ -203,10 +209,8 @@ const Divide = operationFactory('/',
                     }
                 }
             }
-
             const leftTree = buildTreeFromFactors(leftFactors);
             const rightTree = buildTreeFromFactors(rightFactors);
-
             return new Divide(leftTree, rightTree);
         }
     }
@@ -236,7 +240,7 @@ const parse = str => {
 }
 const isConst = str => /^-?\d+$/.test(str);
 
-const exp =new Divide(new Variable('x'), new Multiply(new Variable('y'), new Variable('z'))).diff('x');
+const exp = new Divide(new Variable('x'), new Multiply(new Variable('y'), new Variable('z'))).diff('x');
 // const exp = parse("x 2 x * -");
 const expSimp = exp.simplify();
 console.log(exp.toString());
