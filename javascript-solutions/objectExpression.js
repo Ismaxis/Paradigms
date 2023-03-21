@@ -13,12 +13,10 @@ Const.prototype.diff = function() {
 Const.prototype.simplify = function() {
     return this;
 }
-Const.prototype.getFactors = function() {
-    return [this];
-}
 
 const ZERO = new Const(0);
 const ONE = new Const(1);
+const TWO = new Const(2);
 
 function isConstantValue(element, value) {
     return element instanceof Const && element.value === value;
@@ -41,34 +39,31 @@ Variable.prototype.toString = function() {
     return this.symbol.toString();
 }
 Variable.prototype.diff = function(varName) {
-    return new Const(this.symbol === varName ? 1 : 0);
+    return this.symbol === varName ? ONE : ZERO;
 }
 Variable.prototype.simplify = function() {
     return this;
 }
-Variable.prototype.getFactors = function() {
-    return [this];
-}
 
 function AbstractOperation(...operands) {
+    this.operands = operands; // TODO: temp
     this.getOperands = function() {
         return operands;
     }
-}
-AbstractOperation.prototype.getOperand = function(i) {
-    return this.getOperands()[i];
+    this.getEvaluateOperands = this.getOperands;
 }
 AbstractOperation.prototype.operation = function(...values) {
     return this.operation(...values);
 }
 AbstractOperation.prototype.evaluate = function(...values) {
-    return this.operation(...this.getOperands().map(x => x.evaluate(...values)));
+    const op = this.getEvaluateOperands(); // TODO: temp
+    return this.operation(...op.map(x => x.evaluate(...values)));
 }
 AbstractOperation.prototype.toString = function() {
     return this.getOperands().join(' ') + " " + this.symbol;
 }
 AbstractOperation.prototype.diff = function(varName) {
-    return this.diffRule(varName, ...this.getOperands());
+    return this.diffRule(varName, ...this.getEvaluateOperands());
 }
 AbstractOperation.prototype.simplify = function() {
     const operandsSimplified = this.getOperands().map(operand => operand.simplify());
@@ -83,13 +78,11 @@ AbstractOperation.prototype.simplify = function() {
     }
     return new Const(this.operation(...operandsSimplified.map(operand => operand.value)))
 }
-AbstractOperation.prototype.getFactors = function() {
-    return [new this.constructor(...this.getOperands())];
-}
 
 function operationFactory(symbol, operation, diffRule, simplifySpecificRules) {
     function Operation (...operands) {
         AbstractOperation.call(this, ...operands);
+        this.symbol = symbol; // TODO: temp
     }
     Operation.getArgsCount = function() {
         return operation.length;
@@ -148,92 +141,49 @@ const Multiply = operationFactory('*',
         }
     }
 );
-function getFactorsRecur(arr, elem) {
-    if (elem instanceof Multiply) {
-        arr.push(...elem.getFactors());
-    } else if (elem instanceof Divide) {
-        arr.push(...elem.getOperand(0).getFactors());
-        const denominatorStraighten = elem.getOperand(1).getFactors();
-        for (const element of denominatorStraighten) {
-            arr.push(new Divide(ONE, element));
-        }
-    } else {
-        arr.push(elem);
-    }
-}
-Multiply.prototype.getFactors = function() {
-    const arr = [];
-    getFactorsRecur(arr, this.getOperand(0));
-    getFactorsRecur(arr, this.getOperand(1));
-    return arr;
-}
-
-function buildTreeFromFactors(factors) {
-    if (factors.length > 1) {
-        let curMul = new Multiply(factors[0], factors[1]);
-        for (let i = 2; i < factors.length; i++) {
-            curMul = new Multiply(curMul, factors[i]);
-        }
-        return curMul;
-    } else if (factors.length === 1) {
-        return factors[0]
-    } else {
-        return ONE;
-    }
-}
 
 const Divide = operationFactory('/',
     (a, b) => a / b,
-    (varName, left, right) => new Divide(
-        new Subtract(
-            new Multiply(left.diff(varName), right),
-            new Multiply(left, right.diff(varName))),
-        new Multiply(right, right)),
+    (varName, left, right) => new Add(
+        new Divide(left.diff(varName), right),
+        new Divide(new Negate(new Multiply(left, right.diff(varName))), new Multiply(right, right))
+    ),
     function(leftSimplified, rightSimplified) {
         if (isZero(leftSimplified)) {
             return ZERO;
         } else if (isOne(rightSimplified)) {
             return leftSimplified;
         } else {
-            const leftFactors = leftSimplified.getFactors();
-            const rightFactors = rightSimplified.getFactors();
-            for (let i = 0; i < leftFactors.length; i++) {
-                const leftFactor = leftFactors[i];
-                for (let j = 0; j < rightFactors.length; j++) {
-                    const rightFactor = rightFactors[j];
-                    if (leftFactor === rightFactor) {
-                        leftFactors.splice(i, 1);
-                        rightFactors.splice(j, 1);
-                        i--;
-                        break;
-                    }
-                }
-            }
-            const leftTree = buildTreeFromFactors(leftFactors);
-            const rightTree = buildTreeFromFactors(rightFactors);
-            return new Divide(leftTree, rightTree);
+            return new Divide(leftSimplified, rightSimplified);
         }
     }
 );
 
 const createSumSqN = function(argsCount) {
-    const SumSqN = operationFactory( 'sumsq' + argsCount.toString(),
-        (...operandValues) => operandValues.map(x => x * x).reduce((sum, curVal) => sum + curVal),
+    function SumSqN(...operands) {
+        AbstractOperation.call(this, ...operands);
+        this._evaluateOperands = operands.map(x => new Square(x));
+        this.getEvaluateOperands = () => this._evaluateOperands;
+    }
+    SumSqN.getArgsCount = function() {
+        return argsCount;
+    }
+    SumSqN.prototype = Object.create(operationFactory( 'sumsq' + argsCount.toString(),
+        (...operandValues) => operandValues.reduce((sum, curVal) => sum + curVal),
         (varName, ...operands) => {
             if(operands.length > 1) {
-                let curAdd = new Add(new Square(operands[0]).diff(varName), new Square(operands[1]).diff(varName));
+                let curAdd = new Add(operands[0].diff(varName), operands[1].diff(varName));
                 for (let i = 2; i < operands.length; i++) {
-                    curAdd = new Add(curAdd, new Square(operands[i]).diff(varName));
+                    curAdd = new Add(curAdd, operands[i].diff(varName));
                 }
                 return curAdd;
             } else {
                 return operands[0].diff(varName);
             }
         }
-    )
-    SumSqN.getArgsCount = function() {
-        return argsCount;
-    }
+    ).prototype);
+
+    SumSqN.prototype.constructor = SumSqN;
     return SumSqN;
 }
 
@@ -243,24 +193,32 @@ const Sumsq4 = createSumSqN(4);
 const Sumsq5 = createSumSqN(5);
 
 const createDistanceN = function(argsCount) {
-    const SumSqN = operationFactory( 'distance' + argsCount.toString(),
-        (...operandValues) => Math.sqrt(operandValues.map(x => x * x).reduce((sum, curVal) => sum + curVal)),
-        (varName, ...operands) => {
-            if(operands.length > 1) {
-                let curAdd = new Add(new Square(operands[0]), new Square(operands[1]));
-                for (let i = 2; i < operands.length; i++) {
-                    curAdd = new Add(curAdd, new Square(operands[i]));
-                }
-                return new Sqrt(curAdd).diff(varName);
-            } else {
-                return operands[0].diff(varName);
-            }
-        }
-    )
-    SumSqN.getArgsCount = function() {
+    function DistanceN(...operands) {
+        AbstractOperation.call(this, ...operands);
+        this._evaluateOperand = operands.map(x => new Square(x));
+        this.getEvaluateOperands = () => this._evaluateOperand;
+    }
+    DistanceN.getArgsCount = function() {
         return argsCount;
     }
-    return SumSqN;
+    DistanceN.prototype = Object.create(operationFactory( 'distance' + argsCount.toString(),
+        (...operandValues) => Math.sqrt(operandValues.reduce((sum, curVal) => sum + curVal)),
+        (varName, ...operands) => {
+            let diffSum;
+            if (operands.length > 1) {
+                diffSum = new Add(operands[0].diff(varName).getOperands()[1], operands[1].diff(varName).getOperands()[1]);
+                for (let i = 2; i < operands.length; i++) {
+                    diffSum = new Add(diffSum, operands[i].diff(varName).getOperands()[1]);
+                }
+            } else {
+                diffSum = operands[0].diff(varName).getOperands()[1];
+            }
+            return new Divide(diffSum, new DistanceN(...operands.map(x => x.getOperands()[0])));
+        }
+    ).prototype);
+
+    DistanceN.prototype.constructor = DistanceN;
+    return DistanceN;
 }
 
 const Distance2 = createDistanceN(2);
@@ -268,16 +226,11 @@ const Distance3 = createDistanceN(3);
 const Distance4 = createDistanceN(4);
 const Distance5 = createDistanceN(5);
 
-const TWO = new Const(2);
-const Square = operationFactory("",
-    a => a * a,
-    (varName, operand) => new Multiply(new Multiply(TWO, operand), operand.diff(varName))
-)
 
-const Sqrt = operationFactory("",
-    a => Math.sqrt(a),
-    (varName, operand) => new Divide(operand.diff(varName), new Multiply(TWO, new Sqrt(operand)))
-)
+const Square = operationFactory("square",
+    a => a * a,
+    (varName, operand) => new Multiply(TWO, new Multiply(operand, operand.diff(varName)))
+);
 
 const Negate = operationFactory('negate',
     a => -a,
@@ -303,9 +256,9 @@ const parse = str => str.split(' ').filter(token => token.length > 0).reduce((st
 const isConst = str => /^-?\d+$/.test(str);
 
 const exp = new Distance2(new Const(2), new Variable('y'));
-const expDif = exp.diff('y');
 console.log(exp.toString());
+const expDif = exp.diff('y');
 console.log(expDif.toString());
-console.log(exp.evaluate(2,2,2));
-console.log(expDif.evaluate(2,2,2));
-// console.log(expSimp.toString());
+const expSimp = expDif.simplify();
+console.log(expSimp.toString());
+console.log(expSimp.evaluate(2,2,2));
