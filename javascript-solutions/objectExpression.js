@@ -216,12 +216,77 @@ const Divide = operationFactory('/',
     }
 );
 
+const createSumSqN = function(argsCount) {
+    const SumSqN = operationFactory( 'sumsq' + argsCount.toString(),
+        (...operandValues) => operandValues.map(x => x * x).reduce((sum, curVal) => sum + curVal),
+        (varName, ...operands) => {
+            if(operands.length > 1) {
+                let curAdd = new Add(new Square(operands[0]).diff(varName), new Square(operands[1]).diff(varName));
+                for (let i = 2; i < operands.length; i++) {
+                    curAdd = new Add(curAdd, new Square(operands[i]).diff(varName));
+                }
+                return curAdd;
+            } else {
+                return operands[0].diff(varName);
+            }
+        }
+    )
+    SumSqN.getArgsCount = function() {
+        return argsCount;
+    }
+    return SumSqN;
+}
+
+const Sumsq2 = createSumSqN(2);
+const Sumsq3 = createSumSqN(3);
+const Sumsq4 = createSumSqN(4);
+const Sumsq5 = createSumSqN(5);
+
+const createDistanceN = function(argsCount) {
+    const SumSqN = operationFactory( 'distance' + argsCount.toString(),
+        (...operandValues) => Math.sqrt(operandValues.map(x => x * x).reduce((sum, curVal) => sum + curVal)),
+        (varName, ...operands) => {
+            if(operands.length > 1) {
+                let curAdd = new Add(new Square(operands[0]), new Square(operands[1]));
+                for (let i = 2; i < operands.length; i++) {
+                    curAdd = new Add(curAdd, new Square(operands[i]));
+                }
+                return new Sqrt(curAdd).diff(varName);
+            } else {
+                return operands[0].diff(varName);
+            }
+        }
+    )
+    SumSqN.getArgsCount = function() {
+        return argsCount;
+    }
+    return SumSqN;
+}
+
+const Distance2 = createDistanceN(2);
+const Distance3 = createDistanceN(3);
+const Distance4 = createDistanceN(4);
+const Distance5 = createDistanceN(5);
+
+const TWO = new Const(2);
+const Square = operationFactory("",
+    a => a * a,
+    (varName, operand) => new Multiply(new Multiply(TWO, operand), operand.diff(varName))
+)
+
+const Sqrt = operationFactory("",
+    a => Math.sqrt(a),
+    (varName, operand) => new Divide(operand.diff(varName), new Multiply(TWO, new Sqrt(operand)))
+)
+
 const Negate = operationFactory('negate',
     a => -a,
-    (varName, operand) =>new Negate(operand.diff(varName)));
+    (varName, operand) => new Negate(operand.diff(varName)));
 
 const literals = { 'x': new Variable('x'), 'y': new Variable('y'), 'z': new Variable('z'), }
-const operations = { '+': Add, '-': Subtract, '*': Multiply, '/': Divide, "negate": Negate, }
+const operations = { '+': Add, '-': Subtract, '*': Multiply, '/': Divide, "negate": Negate,
+                    "sumsq2": Sumsq2, "sumsq3": Sumsq3, "sumsq4": Sumsq4, "sumsq5": Sumsq5,
+                    "distance2": Distance2, "distance3": Distance3, "distance4": Distance4, "distance5": Distance5, }
 const parse = str => {
     let stack = [];
     let tokens = str.split(' ').filter(token => token.length > 0);
@@ -240,8 +305,10 @@ const parse = str => {
 }
 const isConst = str => /^-?\d+$/.test(str);
 
-const exp = new Divide(new Variable('x'), new Multiply(new Variable('y'), new Variable('z'))).diff('x');
-// const exp = parse("x 2 x * -");
-const expSimp = exp.simplify();
+const exp = new Distance2(new Const(2), new Variable('y'));
+const expDif = exp.diff('y');
 console.log(exp.toString());
-console.log(expSimp.toString());
+console.log(expDif.toString());
+console.log(exp.evaluate(2,2,2));
+console.log(expDif.evaluate(2,2,2));
+// console.log(expSimp.toString());
