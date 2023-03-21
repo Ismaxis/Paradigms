@@ -173,7 +173,7 @@ const createSumSqN = function(argsCount) {
         (varName, ...operands) => {
             if(operands.length > 1) {
                 let curAdd = new Add(operands[0].diff(varName), operands[1].diff(varName));
-                for (let i = 2; i < operands.length; i++) {
+                for (let i = 2; i < operands.length; i++) { // TODO reduce
                     curAdd = new Add(curAdd, operands[i].diff(varName));
                 }
                 return curAdd;
@@ -195,7 +195,7 @@ const Sumsq5 = createSumSqN(5);
 const createDistanceN = function(argsCount) {
     function DistanceN(...operands) {
         AbstractOperation.call(this, ...operands);
-        this._evaluateOperand = operands.map(x => new Square(x));
+        this._evaluateOperand = [new (createSumSqN(operands.length))(...operands)];
         this.getEvaluateOperands = () => this._evaluateOperand;
     }
     DistanceN.getArgsCount = function() {
@@ -203,17 +203,18 @@ const createDistanceN = function(argsCount) {
     }
     DistanceN.prototype = Object.create(operationFactory( 'distance' + argsCount.toString(),
         (...operandValues) => Math.sqrt(operandValues.reduce((sum, curVal) => sum + curVal)),
-        (varName, ...operands) => {
+        (varName, ...operand) => {
+            const operands = operand[0].getEvaluateOperands();
             let diffSum;
             if (operands.length > 1) {
                 diffSum = new Add(operands[0].diff(varName).getOperands()[1], operands[1].diff(varName).getOperands()[1]);
-                for (let i = 2; i < operands.length; i++) {
+                for (let i = 2; i < operands.length; i++) { // TODO reduce
                     diffSum = new Add(diffSum, operands[i].diff(varName).getOperands()[1]);
                 }
             } else {
                 diffSum = operands[0].diff(varName).getOperands()[1];
             }
-            return new Divide(diffSum, new DistanceN(...operands.map(x => x.getOperands()[0])));
+            return new Divide(diffSum, new DistanceN(...operand[0].getOperands()));
         }
     ).prototype);
 
