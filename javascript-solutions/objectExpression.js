@@ -287,10 +287,9 @@ const literals = { 'x': new Variable('x'), 'y': new Variable('y'), 'z': new Vari
 const operations = { '+': Add, '-': Subtract, '*': Multiply, '/': Divide, "negate": Negate,
                     "sumsq2": Sumsq2, "sumsq3": Sumsq3, "sumsq4": Sumsq4, "sumsq5": Sumsq5,
                     "distance2": Distance2, "distance3": Distance3, "distance4": Distance4, "distance5": Distance5, }
-const parse = str => {
-    let stack = [];
-    let tokens = str.split(' ').filter(token => token.length > 0);
-    tokens.reduce((stack, token) => {
+
+//:NOTE: reduce usage
+const parse = str => str.split(' ').filter(token => token.length > 0).reduce((stack, token) => {
         if (isConst(token)) {
             stack.push(new Const(parseInt(token)));
         } else if (token in literals) {
@@ -300,9 +299,7 @@ const parse = str => {
             stack.push(new op(...stack.splice(-op.getArgsCount())));
         }
         return stack
-    }, stack)
-    return stack.pop();
-}
+    }, []).pop();
 const isConst = str => /^-?\d+$/.test(str);
 
 const exp = new Distance2(new Const(2), new Variable('y'));
