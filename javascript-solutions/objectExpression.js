@@ -46,7 +46,6 @@ Variable.prototype.simplify = function() {
 }
 
 function AbstractOperation(...operands) {
-    this.operands = operands; // TODO: temp
     this.getOperands = function() {
         return operands;
     }
@@ -56,8 +55,7 @@ AbstractOperation.prototype.operation = function(...values) {
     return this.operation(...values);
 }
 AbstractOperation.prototype.evaluate = function(...values) {
-    const op = this.getEvaluateOperands(); // TODO: temp
-    return this.operation(...op.map(x => x.evaluate(...values)));
+    return this.operation(...this.getEvaluateOperands().map(x => x.evaluate(...values)));
 }
 AbstractOperation.prototype.toString = function() {
     return this.getOperands().join(' ') + " " + this.symbol;
@@ -82,13 +80,13 @@ AbstractOperation.prototype.simplify = function() {
 function operationFactory(symbol, operation, diffRule, simplifySpecificRules) {
     function Operation (...operands) {
         AbstractOperation.call(this, ...operands);
-        this.symbol = symbol; // TODO: temp
     }
     Operation.getArgsCount = function() {
         return operation.length;
     }
     Operation.prototype = Object.create(AbstractOperation.prototype);
     Operation.prototype.constructor = Operation;
+    Operation.prototype.constructor.name = symbol;
     Operation.prototype.symbol = symbol;
     Operation.prototype.operation = operation;
     Operation.prototype.diffRule = diffRule;
@@ -170,17 +168,8 @@ const createSumSqN = function(argsCount) {
     }
     SumSqN.prototype = Object.create(operationFactory( 'sumsq' + argsCount.toString(),
         (...operandValues) => operandValues.reduce((sum, curVal) => sum + curVal),
-        (varName, ...operands) => {
-            if(operands.length > 1) {
-                let curAdd = new Add(operands[0].diff(varName), operands[1].diff(varName));
-                for (let i = 2; i < operands.length; i++) { // TODO reduce
-                    curAdd = new Add(curAdd, operands[i].diff(varName));
-                }
-                return curAdd;
-            } else {
-                return operands[0].diff(varName);
-            }
-        }
+        (varName, ...operands) =>
+            operands.map(x => x.diff(varName)).reduce((addTree, cur) => new Add(addTree, cur))
     ).prototype);
 
     SumSqN.prototype.constructor = SumSqN;
@@ -192,30 +181,25 @@ const Sumsq3 = createSumSqN(3);
 const Sumsq4 = createSumSqN(4);
 const Sumsq5 = createSumSqN(5);
 
+
 const createDistanceN = function(argsCount) {
     function DistanceN(...operands) {
         AbstractOperation.call(this, ...operands);
-        this._evaluateOperand = [new (createSumSqN(operands.length))(...operands)];
-        this.getEvaluateOperands = () => this._evaluateOperand;
+        this._evaluateOperands = [new (createSumSqN(operands.length))(...operands)];
+        this.getEvaluateOperands = () => this._evaluateOperands;
     }
     DistanceN.getArgsCount = function() {
         return argsCount;
     }
     DistanceN.prototype = Object.create(operationFactory( 'distance' + argsCount.toString(),
         (...operandValues) => Math.sqrt(operandValues.reduce((sum, curVal) => sum + curVal)),
-        (varName, ...operand) => {
-            const operands = operand[0].getEvaluateOperands();
-            let diffSum;
-            if (operands.length > 1) {
-                diffSum = new Add(operands[0].diff(varName).getOperands()[1], operands[1].diff(varName).getOperands()[1]);
-                for (let i = 2; i < operands.length; i++) { // TODO reduce
-                    diffSum = new Add(diffSum, operands[i].diff(varName).getOperands()[1]);
-                }
-            } else {
-                diffSum = operands[0].diff(varName).getOperands()[1];
-            }
-            return new Divide(diffSum, new DistanceN(...operand[0].getOperands()));
-        }
+        (varName, operand) =>
+            new Divide(
+                operand.getOperands()
+                    .map(x => new Multiply(x, x.diff(varName)))
+                    .reduce((addTree, cur) => new Add(addTree, cur)),
+                new DistanceN(...operand.getOperands())
+            )
     ).prototype);
 
     DistanceN.prototype.constructor = DistanceN;
