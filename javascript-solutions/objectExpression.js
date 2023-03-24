@@ -14,6 +14,7 @@ Const.prototype.simplify = function() {
     return this;
 }
 
+const MINUS_ONE = new Const(-1);
 const ZERO = new Const(0);
 const ONE = new Const(1);
 const TWO = new Const(2);
@@ -56,7 +57,9 @@ AbstractOperation.prototype._toString = function(symbol) {
     return this.getOperands().join(' ') + ' ' + symbol;
 }
 AbstractOperation.prototype.diff = function(varName) {
-    return this.diffRule(varName, ...this.getEvaluateOperands());
+    const operands = this.getOperands();
+    const coefficients = this.getDiffCoefficients(...operands);
+    return operands.reduce(((sum, curOperand, i) => new Add(new Multiply(coefficients[i], curOperand.diff(varName)), sum)), ZERO);
 }
 AbstractOperation.prototype.simplify = function() {
     const operandsSimplified = this.getOperands().map(operand => operand.simplify());
@@ -72,7 +75,7 @@ AbstractOperation.prototype.simplify = function() {
     return new Const(this.operation(...operandsSimplified.map(operand => operand.value)))
 }
 
-function createOperation(symbol, operation, diffRule, simplifySpecificRules) {
+function createOperation(symbol, operation, diffCoefficients, simplifySpecificRules) {
     function Operation (...operands) {
         AbstractOperation.call(this, ...operands);
     }
@@ -85,15 +88,15 @@ function createOperation(symbol, operation, diffRule, simplifySpecificRules) {
         return this._toString(symbol);
     }
     Operation.prototype.operation = operation;
-    Operation.prototype.diffRule = diffRule;
+    Operation.prototype.getDiffCoefficients = diffCoefficients;
     Operation.prototype.simplifySpecificRules = simplifySpecificRules;
     return Operation;
 }
 
 const Add = createOperation('+',
     (a, b) => a + b,
-    (varName, left, right) => new Add(left.diff(varName), right.diff(varName)),
-    function(leftSimplified, rightSimplified) {
+    () => [ONE, ONE],
+    (leftSimplified, rightSimplified) => {
         if (isZero(leftSimplified)) {
             return rightSimplified;
         } else if (isZero(rightSimplified)) {
@@ -106,8 +109,8 @@ const Add = createOperation('+',
 
 const Subtract = createOperation('-',
     (a, b) => a - b,
-    (varName, left, right) => new Subtract(left.diff(varName), right.diff(varName)),
-    function(leftSimplified, rightSimplified) {
+    () => [ONE, MINUS_ONE],
+    (leftSimplified, rightSimplified) => {
         if (isZero(leftSimplified)) {
             return new Negate(rightSimplified).simplify();
         } else if (isZero(rightSimplified)) {
@@ -120,10 +123,8 @@ const Subtract = createOperation('-',
 
 const Multiply = createOperation('*',
     (a, b) => a * b,
-    (varName, left, right) => new Add(
-        new Multiply(left.diff(varName), right),
-        new Multiply(left, right.diff(varName))),
-    function(leftSimplified, rightSimplified) {
+    (left, right) => [right, left],
+    (leftSimplified, rightSimplified) => {
         if (isZero(leftSimplified) || isZero(rightSimplified)) {
             return ZERO;
         } else if (isOne(leftSimplified)) {
@@ -138,11 +139,8 @@ const Multiply = createOperation('*',
 
 const Divide = createOperation('/',
     (a, b) => a / b,
-    (varName, left, right) => new Add(
-        new Divide(left.diff(varName), right),
-        new Divide(new Negate(new Multiply(left, right.diff(varName))), new Multiply(right, right))
-    ),
-    function(leftSimplified, rightSimplified) {
+    (left, right) => [new Divide(ONE, right), new Divide(new Negate(left), new Multiply(right, right))],
+    (leftSimplified, rightSimplified) => {
         if (isZero(leftSimplified)) {
             return ZERO;
         } else if (isOne(rightSimplified)) {
@@ -177,8 +175,7 @@ const createSumSqN = function(argsCount) {
     return createComplexOperation(argsCount, 'sumsq' + argsCount.toString(),
         operands => operands.map(x => new Square(x)),
         (...operandValues) => operandValues.reduce((sum, curVal) => sum + curVal),
-        (varName, ...operands) =>
-            operands.map(x => x.diff(varName)).reduce((addTree, cur) => new Add(addTree, cur)));
+        (...operands) => operands.map(x => new Multiply(TWO, x)))
 }
 
 const Sumsq2 = createSumSqN(2);
@@ -187,16 +184,13 @@ const Sumsq4 = createSumSqN(4);
 const Sumsq5 = createSumSqN(5);
 
 const createDistanceN = function(argsCount) {
-    const DistanceN = createComplexOperation(argsCount, 'distance' + argsCount.toString(),
+    return createComplexOperation(argsCount, 'distance' + argsCount.toString(),
         operands => [new (createSumSqN(operands.length))(...operands)],
         (...operandValues) => Math.sqrt(operandValues.reduce((sum, curVal) => sum + curVal)),
-        (varName, operand) => new Divide(
-            operand.getOperands()
-                .map(x => new Multiply(x, x.diff(varName)))
-                .reduce((addTree, cur) => new Add(addTree, cur)),
-            new DistanceN(...operand.getOperands())
-        ))
-    return DistanceN;
+        function(...operands ) {
+            return operands.map(x => new Divide(x, this));
+        }
+    )
 }
 
 const Distance2 = createDistanceN(2);
@@ -206,12 +200,12 @@ const Distance5 = createDistanceN(5);
 
 const Square = createOperation("square",
     a => a * a,
-    (varName, operand) => new Multiply(TWO, new Multiply(operand, operand.diff(varName)))
+    x => [new Multiply(TWO, x)]
 );
 
 const Negate = createOperation('negate',
     a => -a,
-    (varName, operand) => new Negate(operand.diff(varName))
+    () => [MINUS_ONE]
 );
 
 const literals = { 'x': new Variable('x'), 'y': new Variable('y'), 'z': new Variable('z'), }
@@ -232,9 +226,9 @@ const parse = str => str.split(' ').filter(token => token.length > 0).reduce((st
     }, []).pop();
 const isConst = str => /^-?\d+$/.test(str);
 
-const exp = new Distance2(new Const(2), new Variable('y'));
+const exp = new Negate(new Variable('y'));
 console.log(exp.toString());
-const expDif = exp.diff('y');
+const expDif = exp.diff('x');
 console.log(expDif.toString());
 const expSimp = expDif.simplify();
 console.log(expSimp.toString());
