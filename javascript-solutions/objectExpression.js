@@ -46,19 +46,14 @@ Variable.prototype.simplify = function() {
 }
 
 function AbstractOperation(...operands) {
-    this.getOperands = function() {
-        return operands;
-    }
+    this.getOperands = () => operands;
     this.getEvaluateOperands = this.getOperands;
-}
-AbstractOperation.prototype.operation = function(...values) {
-    return this.operation(...values);
 }
 AbstractOperation.prototype.evaluate = function(...values) {
     return this.operation(...this.getEvaluateOperands().map(x => x.evaluate(...values)));
 }
-AbstractOperation.prototype.toString = function() {
-    return this.getOperands().join(' ') + " " + this.symbol;
+AbstractOperation.prototype._toString = function(symbol) {
+    return this.getOperands().join(' ') + ' ' + symbol;
 }
 AbstractOperation.prototype.diff = function(varName) {
     return this.diffRule(varName, ...this.getEvaluateOperands());
@@ -86,7 +81,9 @@ function createOperation(symbol, operation, diffRule, simplifySpecificRules) {
     }
     Operation.prototype = Object.create(AbstractOperation.prototype);
     Operation.prototype.constructor = Operation;
-    Operation.prototype.symbol = symbol;
+    Operation.prototype.toString = function() {
+        return this._toString(symbol);
+    }
     Operation.prototype.operation = operation;
     Operation.prototype.diffRule = diffRule;
     Operation.prototype.simplifySpecificRules = simplifySpecificRules;
@@ -235,10 +232,9 @@ const parse = str => str.split(' ').filter(token => token.length > 0).reduce((st
     }, []).pop();
 const isConst = str => /^-?\d+$/.test(str);
 
-const simple = new Add(new Const(2), new Variable('y'));
-const complex = new Distance2(new Const(2), new Variable('y'));
-console.log(complex.toString());
-const expDif = complex.diff('y');
+const exp = new Distance2(new Const(2), new Variable('y'));
+console.log(exp.toString());
+const expDif = exp.diff('y');
 console.log(expDif.toString());
 const expSimp = expDif.simplify();
 console.log(expSimp.toString());
