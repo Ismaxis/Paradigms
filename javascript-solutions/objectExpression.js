@@ -67,8 +67,8 @@ AbstractOperation.prototype.postfix = function() {
 AbstractOperation.prototype.diff = function(varName) {
     const operands = this.getOperands();
     const coefficients = this.getDiffCoefficients(...operands);
-    return operands.reduce(((sum, curOperand, i) =>
-        new Add(new Multiply(coefficients[i], curOperand.diff(varName)), sum)), ZERO);
+    return operands.reduce((sum, curOperand, i) =>
+        new Add(new Multiply(coefficients[i], curOperand.diff(varName)), sum), ZERO);
 };
 AbstractOperation.prototype.simplify = function() {
     const operandsSimplified = this.getOperands().map(operand => operand.simplify());
@@ -103,15 +103,10 @@ function createOperation(symbol, operation, diffCoefficients, simplifySpecificRu
 const Add = createOperation('+',
     (a, b) => a + b,
     () => [ONE, ONE],
-    (leftSimplified, rightSimplified) => {
-        if (isZero(leftSimplified)) {
-            return rightSimplified;
-        } else if (isZero(rightSimplified)) {
-            return leftSimplified;
-        } else {
-            return new Add(leftSimplified, rightSimplified);
-        }
-    }
+    (leftSimplified, rightSimplified) =>
+        isZero(leftSimplified) ? rightSimplified :
+        isZero(rightSimplified) ? leftSimplified :
+        new Add(leftSimplified, rightSimplified)
 );
 
 const Subtract = createOperation('-',
@@ -179,15 +174,16 @@ const createComplexSumOperation = function(argsCount, symbol, evalOperands, oper
     return ComplexOperation;
 };
 
-const createSumSqN = function(argsCount) {
-    return createComplexSumOperation(argsCount, 'sumsq' + argsCount.toString(),
+function createSumSqN(argsCount) {
+    return createComplexSumOperation(argsCount, 'sumsq' + argsCount,
         operands => operands.map(x => new Square(x)),
         function(...operandValues) {
             return this.sum(...operandValues);
         },
         (...operands) => operands.map(x => new Multiply(TWO, x)))
-};
+}
 
+// :NOTE: const [Sumsq2, Sumsq3] = [2, 3].map(createSumSqN)
 const Sumsq2 = createSumSqN(2);
 const Sumsq3 = createSumSqN(3);
 const Sumsq4 = createSumSqN(4);
@@ -195,6 +191,7 @@ const Sumsq5 = createSumSqN(5);
 
 const createDistanceN = function(argsCount) {
     return createComplexSumOperation(argsCount, 'distance' + argsCount.toString(),
+        // :NOTE: new type
         operands => [new (createSumSqN(operands.length))(...operands)],
         function(...operandValues) {
             return Math.sqrt(this.sum(...operandValues));
@@ -253,6 +250,7 @@ const operations = { '+': Add, '-': Subtract, '*': Multiply, '/': Divide, "negat
                     "distance2": Distance2, "distance3": Distance3, "distance4": Distance4, "distance5": Distance5,
                     "sumexp": Sumexp, "lse": LSE, };
 
+// :NOTE: split
 const parse = str => str.split(' ').filter(token => token.length > 0).reduce((stack, token) => {
         if (isConst(token)) {
             stack.push(new Const(parseInt(token)));
@@ -385,14 +383,5 @@ const parsePrefix = str => {
     }
     return res;
 };
-
-const parsePostfix = str => {
-    const source = { str: str, index: 0 };
-    const res = parseOperand(source, parsedTokens => parsedTokens.pop());
-    skipWhiteSpaces(source);
-    if (source.index < source.str.length) {
-        throw new PrematureEndException(source.index);
-    }
-    return res;
-};
+// :NOTE: 1.1e-1
 const isConst = str => /^-?\d+$/.test(str);
