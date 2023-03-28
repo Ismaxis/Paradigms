@@ -268,7 +268,6 @@ const parse = str => str.split(' ').filter(token => token.length > 0).reduce((st
     }, []).pop();
 
 function ParserException(index, message) {
-    // Error.call(this, message);
     this.message = index + ": " + message;
 }
 ParserException.prototype = Object.create(Error.prototype);
@@ -399,16 +398,3 @@ const parsePostfix = str => {
     return res;
 }
 const isConst = str => /^-?\d+$/.test(str);
-
-const exp = new LSE(new Variable('x')).diff('x')
-console.log(exp.toString());
-console.log(exp.prefix());
-console.log(exp.evaluate(2,2,2));
-
-// const exp = new Negate(new Variable('y'));
-// console.log(exp.toString());
-// const expDif = exp.diff('x');
-// console.log(expDif.toString());
-// const expSimp = expDif.simplify();
-// console.log(expSimp.toString());
-// console.log(expSimp.evaluate(2,2,2));
