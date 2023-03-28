@@ -8,6 +8,7 @@ Const.prototype.toString = function() {
     return this.value.toString();
 }
 Const.prototype.prefix = Const.prototype.toString;
+Const.prototype.postfix = Const.prototype.toString;
 Const.prototype.diff = function() {
     return ZERO;
 }
@@ -41,6 +42,7 @@ Variable.prototype.toString = function() {
     return this.symbol.toString();
 }
 Variable.prototype.prefix = Variable.prototype.toString;
+Variable.prototype.postfix = Variable.prototype.toString;
 Variable.prototype.diff = function(varName) {
     return this.symbol === varName ? ONE : ZERO;
 }
@@ -60,6 +62,9 @@ AbstractOperation.prototype.toString = function() {
 }
 AbstractOperation.prototype.prefix = function() {
     return '(' + this.symbol + ' ' + this.getOperands().map(op => op.prefix()).join(' ') + ')';
+}
+AbstractOperation.prototype.postfix = function() {
+    return '(' + ' ' + this.getOperands().map(op => op.prefix()).join(' ') + this.symbol + ')';
 }
 AbstractOperation.prototype.diff = function(varName) {
     const operands = this.getOperands();
@@ -155,30 +160,33 @@ const Divide = createOperation('/',
     }
 );
 
-function AbstractComplexOperation(evaluateOperandsFunc, ...operands) {
+function AbstractComplexSumOperation(evaluateOperandsFunc, ...operands) {
     AbstractOperation.call(this, ...operands);
     this._evaluateOperands = evaluateOperandsFunc(operands);
     this.getEvaluateOperands = () => this._evaluateOperands;
 }
-AbstractComplexOperation.prototype = Object.create(AbstractOperation.prototype);
+AbstractComplexSumOperation.prototype = Object.create(AbstractOperation.prototype);
 
-const createComplexOperation = function(argsCount, symbol, evalOperands, operation, diffRule, simplifySpecificRules) {
+const createComplexSumOperation = function(argsCount, symbol, evalOperands, operation, diffRule, simplifySpecificRules) {
     function ComplexOperation (...operands) {
-        AbstractComplexOperation.call(this, evalOperands, ...operands);
+        AbstractComplexSumOperation.call(this, evalOperands, ...operands);
     }
     ComplexOperation.getArgsCount = function() {
         return argsCount;
     }
     ComplexOperation.prototype = Object.create(
         createOperation(symbol, operation, diffRule, simplifySpecificRules).prototype);
+    ComplexOperation.prototype.sum = (...operandValues) => operandValues.reduce((sum, curVal) => sum + curVal);
     ComplexOperation.prototype.constructor = ComplexOperation;
     return ComplexOperation;
 }
 
 const createSumSqN = function(argsCount) {
-    return createComplexOperation(argsCount, 'sumsq' + argsCount.toString(),
+    return createComplexSumOperation(argsCount, 'sumsq' + argsCount.toString(),
         operands => operands.map(x => new Square(x)),
-        (...operandValues) => operandValues.reduce((sum, curVal) => sum + curVal),
+        function(...operandValues) {
+            return this.sum(...operandValues);
+        },
         (...operands) => operands.map(x => new Multiply(TWO, x)))
 }
 
@@ -188,19 +196,48 @@ const Sumsq4 = createSumSqN(4);
 const Sumsq5 = createSumSqN(5);
 
 const createDistanceN = function(argsCount) {
-    return createComplexOperation(argsCount, 'distance' + argsCount.toString(),
+    return createComplexSumOperation(argsCount, 'distance' + argsCount.toString(),
         operands => [new (createSumSqN(operands.length))(...operands)],
-        (...operandValues) => Math.sqrt(operandValues.reduce((sum, curVal) => sum + curVal)),
-        function(...operands ) {
+        function(...operandValues) {
+            return Math.sqrt(this.sum(...operandValues));
+        },
+        function (...operands) {
             return operands.map(x => new Divide(x, this));
         }
-    )
+    );
 }
 
 const Distance2 = createDistanceN(2);
 const Distance3 = createDistanceN(3);
 const Distance4 = createDistanceN(4);
 const Distance5 = createDistanceN(5);
+
+const Sumexp = createComplexSumOperation(-1, 'sumexp',
+    operands => operands.map(x => new Exp(x)),
+    function(...operandValues) {
+        return  operandValues.length > 0 ? this.sum(...operandValues) : 0;
+    },
+    function () {
+        return this.getEvaluateOperands();
+    }
+);
+
+const LSE = createComplexSumOperation(-1, 'lse',
+    operands => [new Sumexp(...operands)],
+    function(...operandValues) {
+            return operandValues.length > 0 ? Math.log(this.sum(...operandValues)) : 0;
+        },
+    function (...operands) {
+        return operands.map(x => new Divide(new Exp(x), this.getEvaluateOperands()[0]));
+    }
+);
+
+const Exp = createOperation("exp",
+    a => Math.exp(a),
+    function() {
+        return [this];
+    }
+);
 
 const Square = createOperation("square",
     a => a * a,
@@ -215,7 +252,8 @@ const Negate = createOperation('negate',
 const literals = { 'x': new Variable('x'), 'y': new Variable('y'), 'z': new Variable('z'), }
 const operations = { '+': Add, '-': Subtract, '*': Multiply, '/': Divide, "negate": Negate,
                     "sumsq2": Sumsq2, "sumsq3": Sumsq3, "sumsq4": Sumsq4, "sumsq5": Sumsq5,
-                    "distance2": Distance2, "distance3": Distance3, "distance4": Distance4, "distance5": Distance5, }
+                    "distance2": Distance2, "distance3": Distance3, "distance4": Distance4, "distance5": Distance5,
+                    "sumexp": Sumexp, "lse": LSE, }
 
 const parse = str => str.split(' ').filter(token => token.length > 0).reduce((stack, token) => {
         if (isConst(token)) {
@@ -254,6 +292,9 @@ const PrimitiveExpectedException = createParserException(
 const OperationExpectedException = createParserException(
     "OperationExpectedException", found => "Operation expected, '" + found + "' found");
 
+const OperationAsArgumentException = createParserException(
+    "OperationAsArgumentException", found => "Operation: '" + found + "' cannot be an argument");
+
 const PrematureEndException = createParserException(
     "PrematureEndException",
         expected => "Premature end." + (expected ? (" '" + expected + "' expected") : ""));
@@ -266,7 +307,6 @@ const WrongArgumentsCountException = createParserException(
 const IndexOutOfBoundException = createParserException(
     "IndexOutOfBoundException",
     (index, str) => "Index '" + index + "' out of bounds for string '" + str + "'");
-
 
 const skipWhiteSpaces = source => {
     while(source.index < source.str.length && /\s/.test(source.str.charAt(source.index))) {
@@ -286,40 +326,42 @@ const parseToken = source => {
     }
     return source.str.substring(startIndex, source.index);
 }
+function parsePrimitive(index, token) {
+    if (isConst(token)) {
+        return new Const(parseInt(token));
+    } else if (token in literals) {
+        return literals[token];
+    } else {
+        throw new PrimitiveExpectedException(index, token);
+    }
+}
 
-const parseOperand = source => {
+function parseOperand(source, takeOperation) {
     if (!(0 <= source.index && source.index < source.str.length)) {
         throw new IndexOutOfBoundException(source.index, source.index, source.str);
     }
     const firstToken = parseToken(source);
-    function parsePrimitive(token) {
-        if (isConst(token)) {
-            return new Const(parseInt(token));
-        } else if (token in literals) {
-            return literals[token];
-        } else {
-            throw new PrimitiveExpectedException(source.index, token);
-        }
-    }
-    function parseAllTokensInside() {
+    if (firstToken === '(') {
+        source.index++;
         const parsedTokens = [];
+        let isOperationFound = false;
         while (source.index < source.str.length && source.str.charAt(source.index) !== ')') {
             const token = parseToken(source);
             if (token === '(') {
-                parsedTokens.push(parseOperand(source));
+                parsedTokens.push(parseOperand(source, takeOperation));
             } else if (token in operations) {
-                parsedTokens.push(token);
+                if (!isOperationFound) {
+                    parsedTokens.push(token);
+                    isOperationFound = true;
+                } else {
+                    throw new OperationAsArgumentException(source.index, token);
+                }
             } else {
-                parsedTokens.push(parsePrimitive(token))
+                parsedTokens.push(parsePrimitive(source.index, token))
             }
             skipWhiteSpaces(source);
         }
-        return parsedTokens;
-    }
-    if (firstToken === '(') {
-        source.index++;
-        const parsedTokens = parseAllTokensInside();
-        const operationToken = parsedTokens.shift();
+        const operationToken = takeOperation(parsedTokens);
         if (!(operationToken in operations)) {
             throw new OperationExpectedException(source.index, operationToken);
         }
@@ -328,18 +370,28 @@ const parseOperand = source => {
             throw new PrematureEndException(source.index, ")");
         }
         source.index++;
-        if (parsedTokens.length !== operation.getArgsCount()) {
+        if (parsedTokens.length !== operation.getArgsCount() && operation.getArgsCount() !== -1) {
             throw new WrongArgumentsCountException(source.index,
                 operationToken, operation.getArgsCount(), parsedTokens.length);
         }
         return new operation(...parsedTokens);
     } else {
-        return parsePrimitive(firstToken);
+        return parsePrimitive(source.index, firstToken);
     }
 }
 const parsePrefix = str => {
     const source = { str: str, index: 0 };
-    const res = parseOperand(source);
+    const res = parseOperand(source, parsedTokens => parsedTokens.shift());
+    skipWhiteSpaces(source);
+    if (source.index < source.str.length) {
+        throw new PrematureEndException(source.index);
+    }
+    return res;
+}
+
+const parsePostfix = str => {
+    const source = { str: str, index: 0 };
+    const res = parseOperand(source, parsedTokens => parsedTokens.pop());
     skipWhiteSpaces(source);
     if (source.index < source.str.length) {
         throw new PrematureEndException(source.index);
@@ -348,7 +400,7 @@ const parsePrefix = str => {
 }
 const isConst = str => /^-?\d+$/.test(str);
 
-const exp = parsePrefix("(/ (negate x) 2)");
+const exp = new LSE(new Variable('x')).diff('x')
 console.log(exp.toString());
 console.log(exp.prefix());
 console.log(exp.evaluate(2,2,2));
