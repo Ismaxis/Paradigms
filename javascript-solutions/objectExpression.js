@@ -382,6 +382,17 @@ const parsePrefix = str => {
         throw new PrematureEndException(source.index);
     }
     return res;
-};
+}
+
+const parsePostfix = str => {
+    const source = { str: str, index: 0 };
+    const res = parseOperand(source, parsedTokens => parsedTokens.pop());
+    skipWhiteSpaces(source);
+    if (source.index < source.str.length) {
+        throw new PrematureEndException(source.index);
+    }
+    return res;
+}
+
 // :NOTE: 1.1e-1
 const isConst = str => /^-?\d+$/.test(str);
