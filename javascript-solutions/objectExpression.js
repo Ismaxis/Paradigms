@@ -377,12 +377,13 @@ function parseOperand(source, takeOperation) {
 const parsePrefix = str => {
     const source = { str: str, index: 0 };
     const res = parseOperand(source, parsedTokens => parsedTokens.shift());
+    // :NOTE: copy-paste
     skipWhiteSpaces(source);
     if (source.index < source.str.length) {
         throw new PrematureEndException(source.index);
     }
     return res;
-}
+};
 
 const parsePostfix = str => {
     const source = { str: str, index: 0 };
@@ -392,7 +393,7 @@ const parsePostfix = str => {
         throw new PrematureEndException(source.index);
     }
     return res;
-}
+};
 
 // :NOTE: 1.1e-1
 const isConst = str => /^-?\d+$/.test(str);
