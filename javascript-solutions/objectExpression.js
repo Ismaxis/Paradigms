@@ -64,7 +64,8 @@ AbstractOperation.prototype.prefix = function() {
 AbstractOperation.prototype.diff = function(varName) {
     const operands = this.getOperands();
     const coefficients = this.getDiffCoefficients(...operands);
-    return operands.reduce(((sum, curOperand, i) => new Add(new Multiply(coefficients[i], curOperand.diff(varName)), sum)), ZERO);
+    return operands.reduce(((sum, curOperand, i) =>
+        new Add(new Multiply(coefficients[i], curOperand.diff(varName)), sum)), ZERO);
 }
 AbstractOperation.prototype.simplify = function() {
     const operandsSimplified = this.getOperands().map(operand => operand.simplify());
@@ -228,23 +229,44 @@ const parse = str => str.split(' ').filter(token => token.length > 0).reduce((st
         return stack
     }, []).pop();
 
-function ParserException(message) {
-    Error.call(this, message);
-    this.message = message;
+function ParserException(index, message) {
+    // Error.call(this, message);
+    this.message = index + ": " + message;
 }
 ParserException.prototype = Object.create(Error.prototype);
 ParserException.prototype.name = "ParserException";
 ParserException.prototype.constructor = ParserException;
 
-const parsePrimitive = token => {
-    if (isConst(token)) {
-        return new Const(parseInt(token));
-    } else if (token in literals) {
-        return literals[token];
-    } else {
-        throw new ParserException("Primitive expected, '" + token + "' found");
+function createParserException(name, messageGenerator) {
+    function CustomParserException(index, ...args) {
+        ParserException.call(this, index, messageGenerator(...args));
     }
+    CustomParserException.prototype = Object.create(ParserException.prototype);
+    CustomParserException.prototype.name = name;
+    CustomParserException.prototype.constructor = CustomParserException;
+
+    return CustomParserException;
 }
+
+const PrimitiveExpectedException = createParserException(
+    "PrimitiveExpectedException", found => "Primitive expected, '" + found + "' found");
+
+const OperationExpectedException = createParserException(
+    "OperationExpectedException", found => "Operation expected, '" + found + "' found");
+
+const PrematureEndException = createParserException(
+    "PrematureEndException",
+        expected => "Premature end." + (expected ? (" '" + expected + "' expected") : ""));
+
+const WrongArgumentsCountException = createParserException(
+    "WrongArgumentsCountException",
+    (operation, expected, found) =>
+        "Expected arguments for '" + operation + "': " + expected + " found: " + found);
+
+const IndexOutOfBoundException = createParserException(
+    "IndexOutOfBoundException",
+    (index, str) => "Index '" + index + "' out of bounds for string '" + str + "'");
+
 
 const skipWhiteSpaces = source => {
     while(source.index < source.str.length && /\s/.test(source.str.charAt(source.index))) {
@@ -267,34 +289,50 @@ const parseToken = source => {
 
 const parseOperand = source => {
     if (!(0 <= source.index && source.index < source.str.length)) {
-        throw new ParserException("Index '" + source.index + "' out of bounds for string '" + source.str + "'");
+        throw new IndexOutOfBoundException(source.index, source.index, source.str);
     }
     const firstToken = parseToken(source);
-    if (firstToken === '(') {
-        source.index++;
-        const operationToken = parseToken(source);
-        if (!(operationToken in operations)) {
-            throw new ParserException("operation expected, '" + operationToken + "' found");
+    function parsePrimitive(token) {
+        if (isConst(token)) {
+            return new Const(parseInt(token));
+        } else if (token in literals) {
+            return literals[token];
+        } else {
+            throw new PrimitiveExpectedException(source.index, token);
         }
-        const operation = operations[operationToken];
-        const operands = [];
-        while(source.index < source.str.length && source.str.charAt(source.index) !== ')') {
+    }
+    function parseAllTokensInside() {
+        const parsedTokens = [];
+        while (source.index < source.str.length && source.str.charAt(source.index) !== ')') {
             const token = parseToken(source);
             if (token === '(') {
-                operands.push(parseOperand(source));
+                parsedTokens.push(parseOperand(source));
+            } else if (token in operations) {
+                parsedTokens.push(token);
             } else {
-                operands.push(parsePrimitive(token))
+                parsedTokens.push(parsePrimitive(token))
             }
             skipWhiteSpaces(source);
         }
+        return parsedTokens;
+    }
+    if (firstToken === '(') {
+        source.index++;
+        const parsedTokens = parseAllTokensInside();
+        const operationToken = parsedTokens.shift();
+        if (!(operationToken in operations)) {
+            throw new OperationExpectedException(source.index, operationToken);
+        }
+        const operation = operations[operationToken]
         if (source.index >= source.str.length) {
-            throw new ParserException("Premature end. ')' expected");
+            throw new PrematureEndException(source.index, ")");
         }
         source.index++;
-        if (operands.length !== operation.getArgsCount()) {
-            throw new ParserException("Wrong args count");
+        if (parsedTokens.length !== operation.getArgsCount()) {
+            throw new WrongArgumentsCountException(source.index,
+                operationToken, operation.getArgsCount(), parsedTokens.length);
         }
-         return new operation(...operands);
+        return new operation(...parsedTokens);
     } else {
         return parsePrimitive(firstToken);
     }
@@ -304,7 +342,7 @@ const parsePrefix = str => {
     const res = parseOperand(source);
     skipWhiteSpaces(source);
     if (source.index < source.str.length) {
-        throw new ParserException("Premature end");
+        throw new PrematureEndException(source.index);
     }
     return res;
 }
