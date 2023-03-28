@@ -3,18 +3,18 @@ function Const(value) {
 }
 Const.prototype.evaluate = function() {
     return this.value;
-}
+};
 Const.prototype.toString = function() {
     return this.value.toString();
-}
+};
 Const.prototype.prefix = Const.prototype.toString;
 Const.prototype.postfix = Const.prototype.toString;
 Const.prototype.diff = function() {
     return ZERO;
-}
+};
 Const.prototype.simplify = function() {
     return this;
-}
+};
 
 const MINUS_ONE = new Const(-1);
 const ZERO = new Const(0);
@@ -24,9 +24,7 @@ const TWO = new Const(2);
 function isConstantValue(element, value) {
     return element instanceof Const && element.value === value;
 }
-function isZero(element) {
-    return isConstantValue(element, 0);
-}
+const isZero = element => isConstantValue(element, 0);
 function isOne(element) {
     return isConstantValue(element, 1);
 }
@@ -37,18 +35,18 @@ function Variable(symbol) {
 }
 Variable.prototype.evaluate = function(...values) {
     return values[variableSymbolsToIndex[this.symbol]];
-}
+};
 Variable.prototype.toString = function() {
     return this.symbol.toString();
-}
+};
 Variable.prototype.prefix = Variable.prototype.toString;
 Variable.prototype.postfix = Variable.prototype.toString;
 Variable.prototype.diff = function(varName) {
     return this.symbol === varName ? ONE : ZERO;
-}
+};
 Variable.prototype.simplify = function() {
     return this;
-}
+};
 
 function AbstractOperation(...operands) {
     this.getOperands = () => operands;
@@ -56,22 +54,22 @@ function AbstractOperation(...operands) {
 }
 AbstractOperation.prototype.evaluate = function(...values) {
     return this.operation(...this.getEvaluateOperands().map(x => x.evaluate(...values)));
-}
+};
 AbstractOperation.prototype.toString = function() {
     return this.getOperands().join(' ') + ' ' + this.symbol;
-}
+};
 AbstractOperation.prototype.prefix = function() {
     return '(' + this.symbol + ' ' + this.getOperands().map(op => op.prefix()).join(' ') + ')';
-}
+};
 AbstractOperation.prototype.postfix = function() {
     return '(' + ' ' + this.getOperands().map(op => op.prefix()).join(' ') + this.symbol + ')';
-}
+};
 AbstractOperation.prototype.diff = function(varName) {
     const operands = this.getOperands();
     const coefficients = this.getDiffCoefficients(...operands);
     return operands.reduce(((sum, curOperand, i) =>
         new Add(new Multiply(coefficients[i], curOperand.diff(varName)), sum)), ZERO);
-}
+};
 AbstractOperation.prototype.simplify = function() {
     const operandsSimplified = this.getOperands().map(operand => operand.simplify());
     for (const operandSimplified of operandsSimplified) {
@@ -84,7 +82,7 @@ AbstractOperation.prototype.simplify = function() {
         }
     }
     return new Const(this.operation(...operandsSimplified.map(operand => operand.value)))
-}
+};
 
 function createOperation(symbol, operation, diffCoefficients, simplifySpecificRules) {
     function Operation (...operands) {
@@ -92,7 +90,7 @@ function createOperation(symbol, operation, diffCoefficients, simplifySpecificRu
     }
     Operation.getArgsCount = function() {
         return operation.length;
-    }
+    };
     Operation.prototype = Object.create(AbstractOperation.prototype);
     Operation.prototype.constructor = Operation;
     Operation.prototype.symbol = symbol;
@@ -173,13 +171,13 @@ const createComplexSumOperation = function(argsCount, symbol, evalOperands, oper
     }
     ComplexOperation.getArgsCount = function() {
         return argsCount;
-    }
+    };
     ComplexOperation.prototype = Object.create(
         createOperation(symbol, operation, diffRule, simplifySpecificRules).prototype);
     ComplexOperation.prototype.sum = (...operandValues) => operandValues.reduce((sum, curVal) => sum + curVal);
     ComplexOperation.prototype.constructor = ComplexOperation;
     return ComplexOperation;
-}
+};
 
 const createSumSqN = function(argsCount) {
     return createComplexSumOperation(argsCount, 'sumsq' + argsCount.toString(),
@@ -188,7 +186,7 @@ const createSumSqN = function(argsCount) {
             return this.sum(...operandValues);
         },
         (...operands) => operands.map(x => new Multiply(TWO, x)))
-}
+};
 
 const Sumsq2 = createSumSqN(2);
 const Sumsq3 = createSumSqN(3);
@@ -205,7 +203,7 @@ const createDistanceN = function(argsCount) {
             return operands.map(x => new Divide(x, this));
         }
     );
-}
+};
 
 const Distance2 = createDistanceN(2);
 const Distance3 = createDistanceN(3);
@@ -249,11 +247,11 @@ const Negate = createOperation('negate',
     () => [MINUS_ONE]
 );
 
-const literals = { 'x': new Variable('x'), 'y': new Variable('y'), 'z': new Variable('z'), }
+const literals = { 'x': new Variable('x'), 'y': new Variable('y'), 'z': new Variable('z'), };
 const operations = { '+': Add, '-': Subtract, '*': Multiply, '/': Divide, "negate": Negate,
                     "sumsq2": Sumsq2, "sumsq3": Sumsq3, "sumsq4": Sumsq4, "sumsq5": Sumsq5,
                     "distance2": Distance2, "distance3": Distance3, "distance4": Distance4, "distance5": Distance5,
-                    "sumexp": Sumexp, "lse": LSE, }
+                    "sumexp": Sumexp, "lse": LSE, };
 
 const parse = str => str.split(' ').filter(token => token.length > 0).reduce((stack, token) => {
         if (isConst(token)) {
@@ -311,7 +309,7 @@ const skipWhiteSpaces = source => {
     while(source.index < source.str.length && /\s/.test(source.str.charAt(source.index))) {
         source.index++;
     }
-}
+};
 const parseToken = source => {
     skipWhiteSpaces(source);
     if (source.str.charAt(source.index) === '(') {
@@ -324,7 +322,7 @@ const parseToken = source => {
         curChar = source.str.charAt(source.index);
     }
     return source.str.substring(startIndex, source.index);
-}
+};
 function parsePrimitive(index, token) {
     if (isConst(token)) {
         return new Const(parseInt(token));
@@ -364,7 +362,7 @@ function parseOperand(source, takeOperation) {
         if (!(operationToken in operations)) {
             throw new OperationExpectedException(source.index, operationToken);
         }
-        const operation = operations[operationToken]
+        const operation = operations[operationToken];
         if (source.index >= source.str.length) {
             throw new PrematureEndException(source.index, ")");
         }
@@ -386,7 +384,7 @@ const parsePrefix = str => {
         throw new PrematureEndException(source.index);
     }
     return res;
-}
+};
 
 const parsePostfix = str => {
     const source = { str: str, index: 0 };
@@ -396,5 +394,5 @@ const parsePostfix = str => {
         throw new PrematureEndException(source.index);
     }
     return res;
-}
+};
 const isConst = str => /^-?\d+$/.test(str);
