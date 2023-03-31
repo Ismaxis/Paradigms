@@ -49,29 +49,32 @@ Variable.prototype.simplify = function() {
 };
 
 function AbstractOperation(...operands) {
-    this.getOperands = () => operands;
-    this.getEvaluateOperands = this.getOperands;
+    this.operands = operands;
+    this.evaluateOperands = operands;
 }
 AbstractOperation.prototype.evaluate = function(...values) {
-    return this.operation(...this.getEvaluateOperands().map(x => x.evaluate(...values)));
+    return this.operation(...this.evaluateOperands.map(x => x.evaluate(...values)));
 };
 AbstractOperation.prototype.toString = function() {
-    return this.getOperands().join(' ') + ' ' + this.symbol;
+    return this.operands.join(' ') + ' ' + this.symbol;
 };
 AbstractOperation.prototype.prefix = function() {
-    return '(' + this.symbol + ' ' + this.getOperands().map(op => op.prefix()).join(' ') + ')';
+    return '(' + this.symbol + ' ' + this.operands.map(op => op.prefix()).join(' ') + ')';
 };
 AbstractOperation.prototype.postfix = function() {
-    return '(' + this.getOperands().map(op => op.postfix()).join(' ') + ' ' + this.symbol + ')';
+    return '(' + this.operands.map(op => op.postfix()).join(' ') + ' ' + this.symbol + ')';
 };
 AbstractOperation.prototype.diff = function(varName) {
-    const operands = this.getOperands();
-    const coefficients = this.getDiffCoefficients(...operands);
+    const operands = this.operands;
+    if (this.diffCoefficients === undefined) {
+        this.diffCoefficients = this.getDiffCoefficients(...this.operands);
+    }
+    const coefficients = this.diffCoefficients;
     return operands.reduce((sum, curOperand, i) =>
         new Add(new Multiply(coefficients[i], curOperand.diff(varName)), sum), ZERO);
 };
 AbstractOperation.prototype.simplify = function() {
-    const operandsSimplified = this.getOperands().map(operand => operand.simplify());
+    const operandsSimplified = this.operands.map(operand => operand.simplify());
     for (const operandSimplified of operandsSimplified) {
         if (!(operandSimplified instanceof Const)) {
             if (this.simplifySpecificRules !== undefined) {
@@ -155,8 +158,7 @@ const Divide = createOperation('/',
 
 function AbstractComplexSumOperation(evaluateOperandsFunc, ...operands) {
     AbstractOperation.call(this, ...operands);
-    this._evaluateOperands = evaluateOperandsFunc(operands);
-    this.getEvaluateOperands = () => this._evaluateOperands;
+    this.evaluateOperands = evaluateOperandsFunc(operands);
 }
 AbstractComplexSumOperation.prototype = Object.create(AbstractOperation.prototype);
 
@@ -206,7 +208,7 @@ const Sumexp = createComplexSumOperation(Infinity, 'sumexp',
         return  operandValues.length > 0 ? this.sum(...operandValues) : 0;
     },
     function () {
-        return this.getEvaluateOperands();
+        return this.evaluateOperands;
     }
 );
 
@@ -216,7 +218,7 @@ const LSE = createComplexSumOperation(Infinity, 'lse',
             return operandValues.length > 0 ? Math.log(this.sum(...operandValues)) : 0;
         },
     function (...operands) {
-        return operands.map(x => new Divide(new Exp(x), this.getEvaluateOperands()[0]));
+        return operands.map(x => new Divide(new Exp(x), this.evaluateOperands[0]));
     }
 );
 
@@ -390,3 +392,12 @@ const parsePostfix = str => {
 
 // :NOTE: 1.1e-1 :FIXED:
 const isConst = str => isFinite(str);
+
+const exp = new Sumsq2(new Const(2), new Const(3));
+console.log(exp.toString());
+console.log(exp.evaluate(0,0,0));
+const diffExp = exp.diff('x');
+console.log(diffExp.toString());
+const simpExp = exp.simplify();
+console.log(simpExp.toString());
+
