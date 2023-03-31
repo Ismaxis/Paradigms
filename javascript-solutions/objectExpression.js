@@ -62,7 +62,7 @@ AbstractOperation.prototype.prefix = function() {
     return '(' + this.symbol + ' ' + this.getOperands().map(op => op.prefix()).join(' ') + ')';
 };
 AbstractOperation.prototype.postfix = function() {
-    return '(' + ' ' + this.getOperands().map(op => op.prefix()).join(' ') + this.symbol + ')';
+    return '(' + this.getOperands().map(op => op.postfix()).join(' ') + ' ' + this.symbol + ')';
 };
 AbstractOperation.prototype.diff = function(varName) {
     const operands = this.getOperands();
@@ -160,7 +160,7 @@ function AbstractComplexSumOperation(evaluateOperandsFunc, ...operands) {
 }
 AbstractComplexSumOperation.prototype = Object.create(AbstractOperation.prototype);
 
-const createComplexSumOperation = function(argsCount, symbol, evalOperands, operation, diffRule, simplifySpecificRules) {
+const createComplexSumOperation = function(argsCount, symbol, evalOperands, operation, diffCoefficients, simplifySpecificRules) {
     function ComplexOperation (...operands) {
         AbstractComplexSumOperation.call(this, evalOperands, ...operands);
     }
@@ -168,7 +168,7 @@ const createComplexSumOperation = function(argsCount, symbol, evalOperands, oper
         return argsCount;
     };
     ComplexOperation.prototype = Object.create(
-        createOperation(symbol, operation, diffRule, simplifySpecificRules).prototype);
+        createOperation(symbol, operation, diffCoefficients, simplifySpecificRules).prototype);
     ComplexOperation.prototype.sum = (...operandValues) => operandValues.reduce((sum, curVal) => sum + curVal);
     ComplexOperation.prototype.constructor = ComplexOperation;
     return ComplexOperation;
@@ -184,15 +184,12 @@ function createSumSqN(argsCount) {
 }
 
 // :NOTE: const [Sumsq2, Sumsq3] = [2, 3].map(createSumSqN)
-const Sumsq2 = createSumSqN(2);
-const Sumsq3 = createSumSqN(3);
-const Sumsq4 = createSumSqN(4);
-const Sumsq5 = createSumSqN(5);
-
+const SumsqN = [2, 3, 4, 5].map(createSumSqN);
+const [Sumsq2, Sumsq3, Sumsq4, Sumsq5] = SumsqN;
 const createDistanceN = function(argsCount) {
     return createComplexSumOperation(argsCount, 'distance' + argsCount.toString(),
         // :NOTE: new type
-        operands => [new (createSumSqN(operands.length))(...operands)],
+        operands => [new (SumsqN[operands.length - 2])(...operands)],
         function(...operandValues) {
             return Math.sqrt(this.sum(...operandValues));
         },
@@ -201,13 +198,9 @@ const createDistanceN = function(argsCount) {
         }
     );
 };
+const [Distance2, Distance3, Distance4, Distance5] = [2, 3, 4, 5].map(createDistanceN);
 
-const Distance2 = createDistanceN(2);
-const Distance3 = createDistanceN(3);
-const Distance4 = createDistanceN(4);
-const Distance5 = createDistanceN(5);
-
-const Sumexp = createComplexSumOperation(-1, 'sumexp',
+const Sumexp = createComplexSumOperation(Infinity, 'sumexp',
     operands => operands.map(x => new Exp(x)),
     function(...operandValues) {
         return  operandValues.length > 0 ? this.sum(...operandValues) : 0;
@@ -217,7 +210,7 @@ const Sumexp = createComplexSumOperation(-1, 'sumexp',
     }
 );
 
-const LSE = createComplexSumOperation(-1, 'lse',
+const LSE = createComplexSumOperation(Infinity, 'lse',
     operands => [new Sumexp(...operands)],
     function(...operandValues) {
             return operandValues.length > 0 ? Math.log(this.sum(...operandValues)) : 0;
@@ -250,8 +243,8 @@ const operations = { '+': Add, '-': Subtract, '*': Multiply, '/': Divide, "negat
                     "distance2": Distance2, "distance3": Distance3, "distance4": Distance4, "distance5": Distance5,
                     "sumexp": Sumexp, "lse": LSE, };
 
-// :NOTE: split
-const parse = str => str.split(' ').filter(token => token.length > 0).reduce((stack, token) => {
+// :NOTE: split :FIXED:
+const parse = str => str.trim().split(/\s+/).reduce((stack, token) => {
         if (isConst(token)) {
             stack.push(new Const(parseInt(token)));
         } else if (token in literals) {
@@ -365,7 +358,7 @@ function parseOperand(source, takeOperation) {
             throw new PrematureEndException(source.index, ")");
         }
         source.index++;
-        if (parsedTokens.length !== operation.getArgsCount() && operation.getArgsCount() !== -1) {
+        if (parsedTokens.length !== operation.getArgsCount() && operation.getArgsCount() !== Infinity) {
             throw new WrongArgumentsCountException(source.index,
                 operationToken, operation.getArgsCount(), parsedTokens.length);
         }
@@ -395,5 +388,5 @@ const parsePostfix = str => {
     return res;
 };
 
-// :NOTE: 1.1e-1
-const isConst = str => /^-?\d+$/.test(str);
+// :NOTE: 1.1e-1 :FIXED:
+const isConst = str => isFinite(str);
