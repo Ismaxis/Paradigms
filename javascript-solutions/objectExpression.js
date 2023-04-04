@@ -90,6 +90,7 @@ function createOperation(symbol, operation, diffCoefficients, simplifySpecificRu
     }
 
     Operation.getArgsCount = () => operation.length;
+    Operation.isValidArgsCount = count => count === operation.length;
     Operation.prototype = Object.create(AbstractOperation.prototype);
     Operation.prototype.constructor = Operation;
     Operation.prototype.symbol = symbol;
@@ -143,12 +144,13 @@ function AbstractComplexSumOperation(evaluateOperandsFunc, ...operands) {
 
 AbstractComplexSumOperation.prototype = Object.create(AbstractOperation.prototype);
 
-function createComplexSumOperation(argsCount, symbol, evalOperands, operation, diffCoefficients, simplifySpecificRules) {
+function createComplexSumOperation(argsCount, symbol, evalOperands, operation, diffCoefficients, isValidArgsCount, simplifySpecificRules) {
     function ComplexOperation(...operands) {
         AbstractComplexSumOperation.call(this, evalOperands, ...operands);
     }
 
     ComplexOperation.getArgsCount = () => argsCount;
+    ComplexOperation.isValidArgsCount = isValidArgsCount ? isValidArgsCount : count => count === argsCount;
     ComplexOperation.prototype = Object.create(
         createOperation(symbol, operation, diffCoefficients, simplifySpecificRules).prototype);
     ComplexOperation.prototype.sum = operandValues => operandValues.reduce((sum, curVal) => sum + curVal, 0);
@@ -186,7 +188,8 @@ const Sumexp = createComplexSumOperation(Infinity, 'sumexp',
     },
     function() {
         return this.evaluateOperands;
-    }
+    },
+    count => count >= 0
 );
 
 const LSE = createComplexSumOperation(Infinity, 'lse',
@@ -196,7 +199,8 @@ const LSE = createComplexSumOperation(Infinity, 'lse',
     },
     function(...operands) {
         return operands.map(x => new Divide(new Exp(x), this.evaluateOperands[0]));
-    }
+    },
+    count => count > 0
 );
 
 const Exp = createOperation("exp",
@@ -235,7 +239,7 @@ const parse = str => str.trim().split(/\s+/).reduce((stack, token) => {
     }
     return stack
 }, []).pop();
-const isConst = str => isFinite(str);
+const isConst = str => !isNaN(str) && isFinite(parseFloat(str));
 
 function ParserException(index, message) {
     this.message = index + ": " + message;
@@ -259,6 +263,9 @@ function createParserException(name, messageGenerator) {
 
 const PrimitiveExpectedException = createParserException(
     "PrimitiveExpectedException", found => "Primitive expected, '" + found + "' found");
+
+const OpenBracketsExpectedException = createParserException(
+    "OpenBracketsExpectedException", found => "'(' expected, '" + found + "' found");
 
 const OperationExpectedException = createParserException(
     "OperationExpectedException", found => "Operation expected, '" + found + "' found");
@@ -314,48 +321,48 @@ function parseOperand(source, takeOperation) {
         throw new IndexOutOfBoundException(source.index, source.index, source.str);
     }
     const firstToken = parseToken(source);
-    if (firstToken === '(') {
-        source.index++;
-        const parsedTokens = [];
-        let isOperationFound = false;
-        while (source.index < source.str.length && source.str.charAt(source.index) !== ')') {
-            const token = parseToken(source);
-            if (token === '(') {
-                parsedTokens.push(parseOperand(source, takeOperation));
-            } else if (token in operations) {
-                if (!isOperationFound) {
-                    parsedTokens.push(token);
-                    isOperationFound = true;
-                } else {
-                    throw new OperationAsArgumentException(source.index, token);
-                }
-            } else {
-                parsedTokens.push(parsePrimitive(source.index, token));
-            }
-            skipWhiteSpaces(source);
-        }
-        const operationToken = takeOperation(parsedTokens);
-        if (!(operationToken in operations)) {
-            throw new OperationExpectedException(source.index, operationToken);
-        }
-        const operation = operations[operationToken];
-        if (source.index >= source.str.length) {
-            throw new PrematureEndException(source.index, ")");
-        }
-        source.index++;
-        if (parsedTokens.length !== operation.getArgsCount() && operation.getArgsCount() !== Infinity) {
-            throw new WrongArgumentsCountException(source.index,
-                operationToken, operation.getArgsCount(), parsedTokens.length);
-        }
-        return new operation(...parsedTokens);
-    } else {
-        return parsePrimitive(source.index, firstToken);
+    if (firstToken !== '(') {
+        throw new OpenBracketsExpectedException(source.index, firstToken);
     }
+
+    source.index++;
+    const parsedTokens = [];
+    let isOperationFound = false;
+    while (source.index < source.str.length && source.str.charAt(source.index) !== ')') {
+        const token = parseToken(source);
+        if (token === '(') {
+            parsedTokens.push(parseOperand(source, takeOperation));
+        } else if (token in operations) {
+            if (isOperationFound) {
+                throw new OperationAsArgumentException(source.index, token);
+            }
+            parsedTokens.push(token);
+            isOperationFound = true;
+        } else {
+            parsedTokens.push(parsePrimitive(source.index, token));
+        }
+        skipWhiteSpaces(source);
+    }
+    const operationToken = takeOperation(parsedTokens);
+    if (!(operationToken in operations)) {
+        throw new OperationExpectedException(source.index, operationToken);
+    }
+    const operation = operations[operationToken];
+    if (source.index >= source.str.length) {
+        throw new PrematureEndException(source.index, ")");
+    }
+    source.index++;
+    if (!operation.isValidArgsCount(parsedTokens.length)) {
+        throw new WrongArgumentsCountException(source.index,
+            operationToken, operation.getArgsCount(), parsedTokens.length);
+    }
+    return new operation(...parsedTokens);
 }
 
 function parseString(str, takeOperation) {
     const source = {str: str, index: 0};
-    const res = parseOperand(source, takeOperation);
+    const firstToken = parseToken(source);
+    const res = firstToken === '(' ? parseOperand(source, takeOperation) : parsePrimitive(source.index, firstToken);
     skipWhiteSpaces(source);
     if (source.index < source.str.length) {
         throw new PrematureEndException(source.index);
