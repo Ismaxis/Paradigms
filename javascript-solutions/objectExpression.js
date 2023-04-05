@@ -48,11 +48,10 @@ Variable.prototype.simplify = function() {
 
 function AbstractOperation(...operands) {
     this.operands = operands;
-    this.evaluateOperands = operands;
 }
 
 AbstractOperation.prototype.evaluate = function(...values) {
-    return this.operation(...this.evaluateOperands.map(x => x.evaluate(...values)));
+    return this.operation(...this.operands.map(x => x.evaluate(...values)));
 };
 AbstractOperation.prototype.toString = function() {
     return this.operands.join(' ') + ' ' + this.symbol;
@@ -64,45 +63,38 @@ AbstractOperation.prototype.postfix = function() {
     return '(' + this.operands.map(op => op.postfix()).join(' ') + ' ' + this.symbol + ')';
 };
 AbstractOperation.prototype.diff = function(varName) {
-    if (this.diffCoefficients === undefined) {
-        this.diffCoefficients = this.getDiffCoefficients(...this.operands);
-    }
-    return this.operands.reduce((sum, curOperand, i) =>
-        new Add(new Multiply(this.diffCoefficients[i], curOperand.diff(varName)), sum), ZERO);
+    return this.diffRule(varName, ...this.operands);
 };
 AbstractOperation.prototype.simplify = function() {
     const operandsSimplified = this.operands.map(operand => operand.simplify());
-    for (const operandSimplified of operandsSimplified) {
-        if (!(operandSimplified instanceof Const)) {
-            if (this.simplifySpecificRules !== undefined) {
-                return this.simplifySpecificRules(...operandsSimplified);
-            } else {
-                return new this.constructor(...operandsSimplified);
-            }
-        }
+    if (operandsSimplified.every(operand => operand instanceof Const)) {
+        return new Const(this.operation(...operandsSimplified.map(operand => operand.value)));
+    } else if (this.simplifySpecificRules !== undefined) {
+        return this.simplifySpecificRules(...operandsSimplified);
+    } else {
+        return new this.constructor(...operandsSimplified);
     }
-    return new Const(this.operation(...operandsSimplified.map(operand => operand.value)))
 };
 
-function createOperation(symbol, operation, diffCoefficients, simplifySpecificRules) {
+function createOperation(symbol, operation, diffRule, simplifySpecificRules) {
     function Operation(...operands) {
         AbstractOperation.call(this, ...operands);
     }
 
-    Operation.getArgsCount = () => operation.length;
-    Operation.isValidArgsCount = count => count === operation.length;
     Operation.prototype = Object.create(AbstractOperation.prototype);
+    Operation.argsCount = operation.length;
+    Operation.isValidArgsCount = count => count === operation.length;
     Operation.prototype.constructor = Operation;
     Operation.prototype.symbol = symbol;
+    Operation.prototype.diffRule = diffRule;
     Operation.prototype.operation = operation;
-    Operation.prototype.getDiffCoefficients = diffCoefficients;
     Operation.prototype.simplifySpecificRules = simplifySpecificRules;
     return Operation;
 }
 
 const Add = createOperation('+',
     (a, b) => a + b,
-    () => [ONE, ONE],
+    (varName, left, right) => new Add(left.diff(varName), right.diff(varName)),
     (leftSimplified, rightSimplified) =>
         isZero(leftSimplified) ? rightSimplified :
             isZero(rightSimplified) ? leftSimplified :
@@ -111,7 +103,7 @@ const Add = createOperation('+',
 
 const Subtract = createOperation('-',
     (a, b) => a - b,
-    () => [ONE, MINUS_ONE],
+    (varName, left, right) => new Subtract(left.diff(varName), right.diff(varName)),
     (leftSimplified, rightSimplified) =>
         isZero(leftSimplified) ? new Negate(rightSimplified).simplify() :
             isZero(rightSimplified) ? leftSimplified :
@@ -120,7 +112,9 @@ const Subtract = createOperation('-',
 
 const Multiply = createOperation('*',
     (a, b) => a * b,
-    (left, right) => [right, left],
+    (varName, left, right) => new Add(
+        new Multiply(left.diff(varName), right),
+        new Multiply(left, right.diff(varName))),
     (leftSimplified, rightSimplified) =>
         isZero(leftSimplified) || isZero(rightSimplified) ? ZERO :
             isOne(leftSimplified) ? rightSimplified :
@@ -130,97 +124,72 @@ const Multiply = createOperation('*',
 
 const Divide = createOperation('/',
     (a, b) => a / b,
-    (left, right) => [new Divide(ONE, right), new Divide(new Negate(left), new Multiply(right, right))],
+    (varName, left, right) => new Add(
+        new Divide(left.diff(varName), right),
+        new Divide(new Negate(new Multiply(left, right.diff(varName))), new Multiply(right, right))
+    ),
     (leftSimplified, rightSimplified) =>
         isZero(leftSimplified) ? ZERO :
             isOne(rightSimplified) ? leftSimplified :
                 new Divide(leftSimplified, rightSimplified)
 );
 
-function AbstractComplexSumOperation(evaluateOperandsFunc, ...operands) {
-    AbstractOperation.call(this, ...operands);
-    this.evaluateOperands = evaluateOperandsFunc(operands);
+const diffOfSum = (varName, operands) => operands.map(operand => new Multiply(operand, operand.diff(varName)))
+    .reduce((sum, cur) => new Add(sum, cur))
+
+const createSumSqN = argsCount => {
+    const SumSqN = createOperation('sumsq' + argsCount,
+        (...operandValues) => operandValues.reduce((sum, curVal) => sum + curVal * curVal, 0),
+        (varName, ...operands) => new Multiply(TWO, diffOfSum(varName, operands))
+    );
+    SumSqN.argsCount = argsCount;
+    return SumSqN;
 }
-
-AbstractComplexSumOperation.prototype = Object.create(AbstractOperation.prototype);
-
-function createComplexSumOperation(argsCount, symbol, evalOperands, operation, diffCoefficients, isValidArgsCount, simplifySpecificRules) {
-    function ComplexOperation(...operands) {
-        AbstractComplexSumOperation.call(this, evalOperands, ...operands);
-    }
-
-    ComplexOperation.getArgsCount = () => argsCount;
-    ComplexOperation.isValidArgsCount = isValidArgsCount ? isValidArgsCount : count => count === argsCount;
-    ComplexOperation.prototype = Object.create(
-        createOperation(symbol, operation, diffCoefficients, simplifySpecificRules).prototype);
-    ComplexOperation.prototype.sum = operandValues => operandValues.reduce((sum, curVal) => sum + curVal, 0);
-    ComplexOperation.prototype.constructor = ComplexOperation;
-    return ComplexOperation;
-}
-
-const createSumSqN = argsCount => createComplexSumOperation(argsCount, 'sumsq' + argsCount,
-    operands => operands.map(x => new Square(x)),
-    function(...operandValues) {
-        return this.sum(operandValues);
-    },
-    (...operands) => operands.map(x => new Multiply(TWO, x))
-);
 
 const SumsqN = [2, 3, 4, 5].map(createSumSqN);
 const [Sumsq2, Sumsq3, Sumsq4, Sumsq5] = SumsqN;
 
-const createDistanceN = argsCount => createComplexSumOperation(argsCount, 'distance' + argsCount,
-    operands => [new (SumsqN[operands.length - 2])(...operands)],
-    function(...operandValues) {
-        return Math.sqrt(this.sum(operandValues));
-    },
-    function(...operands) {
-        return operands.map(x => new Divide(x, this));
-    }
-);
+const createDistanceN = argsCount => {
+    const distanceN = createOperation('distance' + argsCount,
+        (...operandValues) => Math.sqrt(operandValues.reduce((sum, curVal) => sum + curVal * curVal, 0)),
+        function (varName, ...operands) {
+            return new Divide(diffOfSum(varName, operands), this);
+        }
+    );
+    distanceN.argsCount = argsCount;
+    return distanceN;
+}
 
 const [Distance2, Distance3, Distance4, Distance5] = [2, 3, 4, 5].map(createDistanceN);
 
-const Sumexp = createComplexSumOperation(Infinity, 'sumexp',
-    operands => operands.map(x => new Exp(x)),
-    function(...operandValues) {
-        return this.sum(operandValues);
-    },
-    function() {
-        return this.evaluateOperands;
-    },
-    count => count >= 0
+const Sumexp = createOperation('sumexp',
+    (...operandValues) => operandValues.reduce((sum, cur) => sum + Math.exp(cur), 0),
+    (varName, ...operands) => operands.reduce((sum, operand) => new Add(sum, new Multiply(new Exp(operand), operand.diff(varName))), ZERO)
 );
+Sumexp.isValidArgsCount = () => count => count >= 0;
 
-const LSE = createComplexSumOperation(Infinity, 'lse',
-    operands => [new Sumexp(...operands)],
-    function(...operandValues) {
-        return Math.log(this.sum(operandValues));
-    },
-    function(...operands) {
-        return operands.map(x => new Divide(new Exp(x), this.evaluateOperands[0]));
-    },
-    count => count > 0
+const LSE = createOperation('lse',
+    (...operandValues) => Math.log(operandValues.reduce((sum, cur) => sum + Math.exp(cur), 0)),
+    function(varName, ...operands) {
+        const sumInLog = new Sumexp(...operands);
+        return new Divide(sumInLog.diff(varName), sumInLog);
+    }
 );
+LSE.isValidArgsCount = () => count => count > 0;
 
 const Exp = createOperation("exp",
     a => Math.exp(a),
-    function() {
-        return [this];
+    function(varName, operand)  {
+        return new Multiply(operand.diff(varName), this);
     }
-);
-
-const Square = createOperation("square",
-    a => a * a,
-    x => [new Multiply(TWO, x)]
 );
 
 const Negate = createOperation('negate',
     a => -a,
-    () => [MINUS_ONE]
+    (varName, operand) => new Negate(operand.diff(varName))
 );
-
-const literals = {'x': new Variable('x'), 'y': new Variable('y'), 'z': new Variable('z'),};
+const literals = {'x': new Variable('x'), 'y': new Variable('y'), 'z': new Variable('z'),
+                  '0': ZERO, '1': ONE, '2': TWO, '-1': MINUS_ONE, };
 const operations = {
     '+': Add, '-': Subtract, '*': Multiply, '/': Divide, "negate": Negate,
     "sumsq2": Sumsq2, "sumsq3": Sumsq3, "sumsq4": Sumsq4, "sumsq5": Sumsq5,
@@ -229,17 +198,16 @@ const operations = {
 };
 
 const parse = str => str.trim().split(/\s+/).reduce((stack, token) => {
-    if (isConst(token)) {
-        stack.push(new Const(parseInt(token)));
+    if (token in operations) {
+        const op = operations[token];
+        stack.push(new op(...stack.splice(-op.argsCount)));
     } else if (token in literals) {
         stack.push(literals[token]);
-    } else if (token in operations) {
-        const op = operations[token];
-        stack.push(new op(...stack.splice(-op.getArgsCount())));
+    } else {
+        stack.push(new Const(parseFloat(token)));
     }
     return stack
 }, []).pop();
-const isConst = str => !isNaN(str) && isFinite(parseFloat(str));
 
 function ParserException(index, message) {
     this.message = index + ": " + message;
@@ -286,20 +254,22 @@ const IndexOutOfBoundException = createParserException(
     "IndexOutOfBoundException",
     (index, str) => "Index '" + index + "' out of bounds for string '" + str + "'");
 
-function skipWhiteSpaces(source) {
-    while (source.index < source.str.length && /\s/.test(source.str.charAt(source.index))) {
+const isWhitespace = str => /\s/.test(str)
+
+function skipWhitespaces(source) {
+    while (source.index < source.str.length && isWhitespace(source.str.charAt(source.index))) {
         source.index++;
     }
 }
 
 function parseToken(source) {
-    skipWhiteSpaces(source);
+    skipWhitespaces(source);
     if (source.str.charAt(source.index) === '(') {
         return '(';
     }
     const startIndex = source.index;
     let curChar = source.str.charAt(source.index);
-    while (source.index < source.str.length && curChar !== ')' && curChar !== '(' && !/\s/.test(curChar)) {
+    while (source.index < source.str.length && curChar !== ')' && curChar !== '(' && !isWhitespace(curChar)) {
         source.index++;
         curChar = source.str.charAt(source.index);
     }
@@ -307,14 +277,15 @@ function parseToken(source) {
 }
 
 function parsePrimitive(index, token) {
-    if (isConst(token)) {
-        return new Const(parseInt(token));
-    } else if (token in literals) {
+    if (token in literals) {
         return literals[token];
+    } else if (isConst(token)) {
+        return new Const(parseInt(token));
     } else {
         throw new PrimitiveExpectedException(index, token);
     }
 }
+const isConst = str => !isNaN(str) && isFinite(parseFloat(str));
 
 function parseOperand(source, takeOperation) {
     if (!(0 <= source.index && source.index < source.str.length)) {
@@ -341,7 +312,7 @@ function parseOperand(source, takeOperation) {
         } else {
             parsedTokens.push(parsePrimitive(source.index, token));
         }
-        skipWhiteSpaces(source);
+        skipWhitespaces(source);
     }
     const operationToken = takeOperation(parsedTokens);
     if (!(operationToken in operations)) {
@@ -354,7 +325,7 @@ function parseOperand(source, takeOperation) {
     source.index++;
     if (!operation.isValidArgsCount(parsedTokens.length)) {
         throw new WrongArgumentsCountException(source.index,
-            operationToken, operation.getArgsCount(), parsedTokens.length);
+            operationToken, operation.argsCount, parsedTokens.length);
     }
     return new operation(...parsedTokens);
 }
@@ -363,7 +334,7 @@ function parseString(str, takeOperation) {
     const source = {str: str, index: 0};
     const firstToken = parseToken(source);
     const res = firstToken === '(' ? parseOperand(source, takeOperation) : parsePrimitive(source.index, firstToken);
-    skipWhiteSpaces(source);
+    skipWhitespaces(source);
     if (source.index < source.str.length) {
         throw new PrematureEndException(source.index);
     }
