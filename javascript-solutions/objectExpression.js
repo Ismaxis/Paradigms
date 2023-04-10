@@ -137,9 +137,13 @@ const Divide = createOperation('/',
 const diffOfSum = (varName, operands) => operands.map(operand => new Multiply(operand, operand.diff(varName)))
     .reduce((sum, cur) => new Add(sum, cur))
 
+const sumOp = (operandValues, op) => operandValues.reduce((sum, curVal) => sum + op(curVal), 0);
+
+const sumSquares = operandValues => sumOp(operandValues, x => x * x);
+
 const createSumSqN = argsCount => {
     const SumSqN = createOperation('sumsq' + argsCount,
-        (...operandValues) => operandValues.reduce((sum, curVal) => sum + curVal * curVal, 0),
+        (...operandValues) => sumSquares(operandValues),
         (varName, ...operands) => new Multiply(TWO, diffOfSum(varName, operands))
     );
     SumSqN.argsCount = argsCount;
@@ -151,7 +155,7 @@ const [Sumsq2, Sumsq3, Sumsq4, Sumsq5] = SumsqN;
 
 const createDistanceN = argsCount => {
     const distanceN = createOperation('distance' + argsCount,
-        (...operandValues) => Math.sqrt(operandValues.reduce((sum, curVal) => sum + curVal * curVal, 0)),
+        (...operandValues) => Math.sqrt(sumSquares(operandValues)),
         function (varName, ...operands) {
             return new Divide(diffOfSum(varName, operands), this);
         }
@@ -162,14 +166,16 @@ const createDistanceN = argsCount => {
 
 const [Distance2, Distance3, Distance4, Distance5] = [2, 3, 4, 5].map(createDistanceN);
 
+const sumExp = operandValues => sumOp(operandValues, Math.exp);
+
 const Sumexp = createOperation('sumexp',
-    (...operandValues) => operandValues.reduce((sum, cur) => sum + Math.exp(cur), 0),
+    (...operandValues) => sumExp(operandValues),
     (varName, ...operands) => operands.reduce((sum, operand) => new Add(sum, new Multiply(new Exp(operand), operand.diff(varName))), ZERO)
 );
 Sumexp.isValidArgsCount = () => count => count >= 0;
 
 const LSE = createOperation('lse',
-    (...operandValues) => Math.log(operandValues.reduce((sum, cur) => sum + Math.exp(cur), 0)),
+    (...operandValues) => Math.log(sumExp(operandValues)),
     function(varName, ...operands) {
         const sumInLog = new Sumexp(...operands);
         return new Divide(sumInLog.diff(varName), sumInLog);
@@ -280,7 +286,7 @@ function parsePrimitive(index, token) {
     if (token in literals) {
         return literals[token];
     } else if (isConst(token)) {
-        return new Const(parseInt(token));
+        return new Const(parseFloat(token));
     } else {
         throw new PrimitiveExpectedException(index, token);
     }
