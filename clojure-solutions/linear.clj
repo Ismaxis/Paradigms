@@ -80,6 +80,29 @@
       {:pre [(vector-of-numbers? l) (vector-of-numbers? r) (== (count l) 3) (equal-size-vectors? l r)]
        :post [(vector-of-numbers? %) (equal-size-vectors? % l)]}
       (let
-        [lx (nth l 0) ly (nth l 1) lz (nth l 2)
-         rx (nth r 0) ry (nth r 1) rz (nth r 2)]
+        [[lx ly lz] l
+         [rx ry rz] r]
         (vector (- (* ly rz) (* lz ry)) (- (* lz rx) (* lx rz)) (- (* lx ry) (* ly rx)))))))
+
+
+(defn equal-size-tensors? [& args]
+  (or (every? number? args) (and (apply == (mapv count args)) (every? (partial mapv equal-size-tensors?) args))))
+
+(defn t [operation]
+  (fn [& ts]
+    {:pre [(apply equal-size-tensors? ts)]
+     :post [(equal-size-tensors? (first ts) %)]}
+    (if
+      (every? number? ts)
+      (apply operation ts)
+      (apply mapv (t operation) ts)))
+  )
+
+(def t+ (t +))
+(def t- (t -))
+(def t* (t *))
+(def td (t /))
+(defn get-shape [t]
+  (if (number? t)
+    []
+    (cons (count t) (get-shape (first t)))))
