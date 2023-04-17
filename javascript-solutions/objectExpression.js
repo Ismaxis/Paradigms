@@ -67,19 +67,18 @@ AbstractOperation.prototype.diff = function(varName) {
     if (this.diffCoefficients === undefined) {
         this.diffCoefficients = this.getDiffCoefficients(...this.operands);
     }
-    const coefficients = this.diffCoefficients;
-    return operands.reduce((sum, curOperand, i) =>
-        new Add(new Multiply(coefficients[i], curOperand.diff(varName)), sum), ZERO);
+    const coefs = this.diffCoefficients;
+    const res = operands.reduce((sum, curOperand, i) =>
+            new Add(new Multiply(coefs.coefficients[i], curOperand.diff(varName)), sum), ZERO);
+    return "commonMultiplier" in coefs ? new Multiply(coefs.commonMultiplier, res) :
+        "commonDivisor" in coefs ? new Divide(res, coefs.commonDivisor) : res;
 };
 AbstractOperation.prototype.simplify = function() {
     const operandsSimplified = this.operands.map(operand => operand.simplify());
-    if (operandsSimplified.every(operand => operand instanceof Const)) {
-        return new Const(this.operation(...operandsSimplified.map(operand => operand.value)));
-    } else if (this.simplifySpecificRules !== undefined) {
-        return this.simplifySpecificRules(...operandsSimplified);
-    } else {
-        return new this.constructor(...operandsSimplified);
-    }
+    return operandsSimplified.every(operand => operand instanceof Const) ?
+        new Const(this.operation(...operandsSimplified.map(operand => operand.value))) :
+        this.simplifySpecificRules !== undefined ? this.simplifySpecificRules(...operandsSimplified) :
+            new this.constructor(...operandsSimplified);
 };
 
 function createOperation(symbol, operation, diffCoefficients, simplifySpecificRules) {
@@ -100,7 +99,7 @@ function createOperation(symbol, operation, diffCoefficients, simplifySpecificRu
 
 const Add = createOperation('+',
     (a, b) => a + b,
-    () => [ONE, ONE],
+    () => ({"coefficients": [ONE, ONE]}),
     (leftSimplified, rightSimplified) =>
         isZero(leftSimplified) ? rightSimplified :
             isZero(rightSimplified) ? leftSimplified :
@@ -109,57 +108,37 @@ const Add = createOperation('+',
 
 const Subtract = createOperation('-',
     (a, b) => a - b,
-    () => [ONE, MINUS_ONE],
-    (leftSimplified, rightSimplified) => {
-        if (isZero(leftSimplified)) {
-            return new Negate(rightSimplified).simplify();
-        } else if (isZero(rightSimplified)) {
-            return leftSimplified;
-        } else {
-            return new Subtract(leftSimplified, rightSimplified);
-        }
-    }
+    () => ({"coefficients": [ONE, MINUS_ONE]}),
+    (leftSimplified, rightSimplified) =>
+        isZero(leftSimplified) ? new Negate(rightSimplified).simplify() :
+            isZero(rightSimplified) ? leftSimplified :
+                new Subtract(leftSimplified, rightSimplified)
 );
 
 const Multiply = createOperation('*',
     (a, b) => a * b,
-    (left, right) => [right, left],
-    (leftSimplified, rightSimplified) => {
-        if (isZero(leftSimplified) || isZero(rightSimplified)) {
-            return ZERO;
-        } else if (isOne(leftSimplified)) {
-            return rightSimplified;
-        } else if (isOne(rightSimplified)) {
-            return leftSimplified;
-        } else {
-            return new Multiply(leftSimplified, rightSimplified);
-        }
-    }
+    (left, right) => ({"coefficients": [right, left]}),
+    (leftSimplified, rightSimplified) =>
+        isZero(leftSimplified) || isZero(rightSimplified) ? ZERO :
+            isOne(leftSimplified) ? rightSimplified :
+                isOne(rightSimplified) ? leftSimplified :
+                    new Multiply(leftSimplified, rightSimplified)
+
 );
 
 const Divide = createOperation('/',
     (a, b) => a / b,
-    (left, right) => [new Divide(ONE, right), new Divide(new Negate(left), new Multiply(right, right))],
-    (leftSimplified, rightSimplified) => {
-        if (isZero(leftSimplified)) {
-            return ZERO;
-        } else if (isOne(rightSimplified)) {
-            return leftSimplified;
-        } else {
-            return new Divide(leftSimplified, rightSimplified);
-        }
-    }
+    (left, right) => ({"commonDivisor": right, "coefficients": [ONE, new Divide(new Negate(left), right)]}),
+    (leftSimplified, rightSimplified) =>
+        isZero(leftSimplified) ? ZERO :
+            isOne(rightSimplified) ? leftSimplified :
+                new Divide(leftSimplified, rightSimplified)
 );
-
-function AbstractComplexSumOperation(evaluateOperandsFunc, ...operands) {
-    AbstractOperation.call(this, ...operands);
-    this.evaluateOperands = evaluateOperandsFunc(operands);
-}
-AbstractComplexSumOperation.prototype = Object.create(AbstractOperation.prototype);
 
 const createComplexSumOperation = function(argsCount, symbol, evalOperands, operation, diffCoefficients, simplifySpecificRules) {
     function ComplexOperation (...operands) {
-        AbstractComplexSumOperation.call(this, evalOperands, ...operands);
+        AbstractOperation.call(this, ...operands);
+        this.evaluateOperands = evalOperands(operands);
     }
     ComplexOperation.argsCount = argsCount;
     ComplexOperation.prototype = Object.create(
@@ -176,18 +155,19 @@ const createSumSqN = argsCount => createComplexSumOperation(argsCount, 'sumsq' +
         function(...operandValues) {
             return this.sum(square(operandValues));
         },
-        (...operands) => operands.map(x => new Multiply(TWO, x))
+        (...operands) => ({"commonMultiplier": TWO, "coefficients": operands})
 );
 
 const SumsqN = [2, 3, 4, 5].map(createSumSqN);
 const [Sumsq2, Sumsq3, Sumsq4, Sumsq5] = SumsqN;
+
 const createDistanceN = argsCount => createComplexSumOperation(argsCount, 'distance' + argsCount.toString(),
     operands => operands,
     function(...operandValues) {
         return Math.sqrt(this.sum(square(operandValues)));
     },
     function (...operands) {
-        return operands.map(x => new Divide(x, this));
+        return {"commonDivisor": this, "coefficients": operands};
     }
 );
 
@@ -199,7 +179,7 @@ const Sumexp = createComplexSumOperation(Infinity, 'sumexp',
         return operandValues.length > 0 ? this.sum(operandValues) : 0;
     },
     function () {
-        return this.evaluateOperands;
+        return {"coefficients": this.evaluateOperands};
     }
 );
 Sumexp.isValidArgsCount = () => count => count >= 0;
@@ -210,7 +190,7 @@ const LSE = createComplexSumOperation(Infinity, 'lse',
         return Math.log(this.sum(operandValues));
     },
     function (...operands) {
-        return operands.map(x => new Divide(new Exp(x), this.evaluateOperands[0]));
+        return {"commonDivisor": this.evaluateOperands[0], "coefficients": operands.map(x => new Exp(x))};
     }
 );
 LSE.isValidArgsCount = () => count => count > 0;
@@ -218,13 +198,13 @@ LSE.isValidArgsCount = () => count => count > 0;
 const Exp = createOperation("exp",
     a => Math.exp(a),
     function() {
-        return [this];
+        return {"coefficients": [this]};
     }
 );
 
 const Negate = createOperation('negate',
     a => -a,
-    () => [MINUS_ONE]
+    () => ({"coefficients": [MINUS_ONE]})
 );
 
 const literals = {'x': new Variable('x'), 'y': new Variable('y'), 'z': new Variable('z'),
@@ -260,11 +240,9 @@ function createParserException(name, messageGenerator) {
     function CustomParserException(index, ...args) {
         ParserException.call(this, index, messageGenerator(...args));
     }
-
     CustomParserException.prototype = Object.create(ParserException.prototype);
     CustomParserException.prototype.name = name;
     CustomParserException.prototype.constructor = CustomParserException;
-
     return CustomParserException;
 }
 
