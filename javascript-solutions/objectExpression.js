@@ -161,7 +161,7 @@ const createSumSqN = argsCount => createComplexSumOperation(argsCount, 'sumsq' +
 const SumsqN = [2, 3, 4, 5].map(createSumSqN);
 const [Sumsq2, Sumsq3, Sumsq4, Sumsq5] = SumsqN;
 
-const createDistanceN = argsCount => createComplexSumOperation(argsCount, 'distance' + argsCount.toString(),
+const createDistanceN = argsCount => createComplexSumOperation(argsCount, 'distance' + argsCount,
     operands => operands,
     function(...operandValues) {
         return Math.sqrt(this.sum(square(operandValues)));
