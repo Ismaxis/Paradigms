@@ -75,10 +75,11 @@ AbstractOperation.prototype.diff = function(varName) {
 };
 AbstractOperation.prototype.simplify = function() {
     const operandsSimplified = this.operands.map(operand => operand.simplify());
-    return operandsSimplified.every(operand => operand instanceof Const) ?
-        new Const(this.operation(...operandsSimplified.map(operand => operand.value))) :
-        this.simplifySpecificRules !== undefined ? this.simplifySpecificRules(...operandsSimplified) :
-            new this.constructor(...operandsSimplified);
+    return operandsSimplified.every(operand => operand instanceof Const)
+        ? new Const(this.operation(...operandsSimplified.map(operand => operand.value)))
+        : this.simplifySpecificRules !== undefined
+            ? this.simplifySpecificRules(...operandsSimplified)
+            : new this.constructor(...operandsSimplified);
 };
 
 function createOperation(symbol, operation, diffCoefficients, simplifySpecificRules) {
@@ -102,8 +103,8 @@ const Add = createOperation('+',
     () => ({"coefficients": [ONE, ONE]}),
     (leftSimplified, rightSimplified) =>
         isZero(leftSimplified) ? rightSimplified :
-            isZero(rightSimplified) ? leftSimplified :
-                new Add(leftSimplified, rightSimplified)
+        isZero(rightSimplified) ? leftSimplified :
+        new Add(leftSimplified, rightSimplified)
 );
 
 const Subtract = createOperation('-',
@@ -143,25 +144,29 @@ const createComplexSumOperation = function(argsCount, symbol, evalOperands, oper
     ComplexOperation.argsCount = argsCount;
     ComplexOperation.prototype = Object.create(
         createOperation(symbol, operation, diffCoefficients, simplifySpecificRules).prototype);
-    ComplexOperation.prototype.sum = (operandValues) => operandValues.reduce((sum, curVal) => sum + curVal);
+    ComplexOperation.prototype.sum = (operandValues) => operandValues.reduce((sum, curVal) => sum + curVal, 0);
     ComplexOperation.prototype.constructor = ComplexOperation;
     return ComplexOperation;
 };
 
 const square = operandValues => operandValues.map(x => x * x);
 
-const createSumSqN = argsCount => createComplexSumOperation(argsCount, 'sumsq' + argsCount,
-        operands => operands,
-        function(...operandValues) {
-            return this.sum(square(operandValues));
-        },
-        (...operands) => ({"commonMultiplier": TWO, "coefficients": operands})
+const createSumSqN = argsCount => createComplexSumOperation(
+    argsCount,
+    'sumsq' + argsCount,
+    operands => operands,
+    function(...operandValues) {
+        return this.sum(square(operandValues));
+    },
+    (...operands) => ({commonMultiplier: TWO, coefficients: operands})
 );
 
 const SumsqN = [2, 3, 4, 5].map(createSumSqN);
 const [Sumsq2, Sumsq3, Sumsq4, Sumsq5] = SumsqN;
 
-const createDistanceN = argsCount => createComplexSumOperation(argsCount, 'distance' + argsCount,
+const createDistanceN = argsCount => createComplexSumOperation(
+    argsCount,
+    'distance' + argsCount,
     operands => operands,
     function(...operandValues) {
         return Math.sqrt(this.sum(square(operandValues)));
@@ -173,7 +178,9 @@ const createDistanceN = argsCount => createComplexSumOperation(argsCount, 'dista
 
 const [Distance2, Distance3, Distance4, Distance5] = [2, 3, 4, 5].map(createDistanceN);
 
-const Sumexp = createComplexSumOperation(Infinity, 'sumexp',
+const Sumexp = createComplexSumOperation(
+    Infinity,
+    'sumexp',
     operands => operands.map(x => new Exp(x)),
     function(...operandValues) {
         return operandValues.length > 0 ? this.sum(operandValues) : 0;
@@ -190,15 +197,16 @@ const LSE = createComplexSumOperation(Infinity, 'lse',
         return Math.log(this.sum(operandValues));
     },
     function (...operands) {
+        // :NOTE: diff
         return {"commonDivisor": this.evaluateOperands[0], "coefficients": operands.map(x => new Exp(x))};
     }
 );
 LSE.isValidArgsCount = () => count => count > 0;
 
 const Exp = createOperation("exp",
-    a => Math.exp(a),
+    a => Math.exp(a), // :NOTE: a => Math.exp(a)
     function() {
-        return {"coefficients": [this]};
+        return {coefficients: [this]};
     }
 );
 
@@ -216,17 +224,24 @@ const operations = {
     "sumexp": Sumexp, "lse": LSE,
 };
 
-const parse = str => str.trim().split(/\s+/).reduce((stack, token) => {
-    if (token in operations) {
-        const op = operations[token];
-        stack.push(new op(...stack.splice(-op.argsCount)));
-    } else if (token in literals) {
-        stack.push(literals[token]);
-    } else {
-        stack.push(new Const(parseFloat(token)));
-    }
-    return stack
-}, []).pop();
+const parse = str =>
+    str.trim()
+        .split(/\s+/)
+        .reduce(
+            (stack, token) => {
+                if (token in operations) {
+                    const op = operations[token];
+                    stack.push(new op(...stack.splice(-op.argsCount)));
+                } else if (token in literals) {
+                    stack.push(literals[token]);
+                } else {
+                    stack.push(new Const(parseFloat(token)));
+                }
+                return stack
+            },
+            []
+        )
+        .pop();
 
 function ParserException(index, message) {
     this.message = index + ": " + message;
