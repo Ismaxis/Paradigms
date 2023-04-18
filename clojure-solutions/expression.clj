@@ -1,4 +1,5 @@
 (require 'clojure.math)
+;; :NOTE: для констант есть стандартная функция
 (defn constant [val] (fn [& _] val))
 (defn variable [name] (fn [map] (get map name)))
 (defn operation [op] (fn [& args] (fn [map] (apply op (mapv #(% map) args)))))
@@ -6,6 +7,7 @@
 (def subtract (operation -'))
 (def multiply (operation *'))
 (def divide (operation (fn [& args]
+                           ;; деление принимает 1+ аргумент
                 (if (== (count args) 1) (/ 1 (double (first args)))
                                         (reduce #(/ %1 (double %2)) args)))))
 
