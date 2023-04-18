@@ -48,10 +48,10 @@ Variable.prototype.simplify = function() {
 
 function AbstractOperation(...operands) {
     this.operands = operands;
+    this.evaluateOperands = operands;
 }
-
 AbstractOperation.prototype.evaluate = function(...values) {
-    return this.operation(...this.operands.map(x => x.evaluate(...values)));
+    return this.operation(...this.evaluateOperands.map(x => x.evaluate(...values)));
 };
 AbstractOperation.prototype.toString = function() {
     return this.operands.join(' ') + ' ' + this.symbol;
@@ -63,20 +63,25 @@ AbstractOperation.prototype.postfix = function() {
     return '(' + this.operands.map(op => op.postfix()).join(' ') + ' ' + this.symbol + ')';
 };
 AbstractOperation.prototype.diff = function(varName) {
-    return this.diffRule(varName, ...this.operands);
+    const operands = this.operands;
+    if (this.diffCoefficients === undefined) {
+        this.diffCoefficients = this.getDiffCoefficients(...this.operands);
+    }
+    const coefs = this.diffCoefficients;
+    const res = operands.reduce((sum, curOperand, i) =>
+            new Add(new Multiply(coefs.coefficients[i], curOperand.diff(varName)), sum), ZERO);
+    return "commonMultiplier" in coefs ? new Multiply(coefs.commonMultiplier, res) :
+        "commonDivisor" in coefs ? new Divide(res, coefs.commonDivisor) : res;
 };
 AbstractOperation.prototype.simplify = function() {
     const operandsSimplified = this.operands.map(operand => operand.simplify());
-    if (operandsSimplified.every(operand => operand instanceof Const)) {
-        return new Const(this.operation(...operandsSimplified.map(operand => operand.value)));
-    } else if (this.simplifySpecificRules !== undefined) {
-        return this.simplifySpecificRules(...operandsSimplified);
-    } else {
-        return new this.constructor(...operandsSimplified);
-    }
+    return operandsSimplified.every(operand => operand instanceof Const) ?
+        new Const(this.operation(...operandsSimplified.map(operand => operand.value))) :
+        this.simplifySpecificRules !== undefined ? this.simplifySpecificRules(...operandsSimplified) :
+            new this.constructor(...operandsSimplified);
 };
 
-function createOperation(symbol, operation, diffRule, simplifySpecificRules) {
+function createOperation(symbol, operation, diffCoefficients, simplifySpecificRules) {
     function Operation(...operands) {
         AbstractOperation.call(this, ...operands);
     }
@@ -86,7 +91,7 @@ function createOperation(symbol, operation, diffRule, simplifySpecificRules) {
     Operation.isValidArgsCount = count => count === operation.length;
     Operation.prototype.constructor = Operation;
     Operation.prototype.symbol = symbol;
-    Operation.prototype.diffRule = diffRule;
+    Operation.prototype.getDiffCoefficients = diffCoefficients;
     Operation.prototype.operation = operation;
     Operation.prototype.simplifySpecificRules = simplifySpecificRules;
     return Operation;
@@ -94,7 +99,7 @@ function createOperation(symbol, operation, diffRule, simplifySpecificRules) {
 
 const Add = createOperation('+',
     (a, b) => a + b,
-    (varName, left, right) => new Add(left.diff(varName), right.diff(varName)),
+    () => ({"coefficients": [ONE, ONE]}),
     (leftSimplified, rightSimplified) =>
         isZero(leftSimplified) ? rightSimplified :
             isZero(rightSimplified) ? leftSimplified :
@@ -103,7 +108,7 @@ const Add = createOperation('+',
 
 const Subtract = createOperation('-',
     (a, b) => a - b,
-    (varName, left, right) => new Subtract(left.diff(varName), right.diff(varName)),
+    () => ({"coefficients": [ONE, MINUS_ONE]}),
     (leftSimplified, rightSimplified) =>
         isZero(leftSimplified) ? new Negate(rightSimplified).simplify() :
             isZero(rightSimplified) ? leftSimplified :
@@ -112,90 +117,98 @@ const Subtract = createOperation('-',
 
 const Multiply = createOperation('*',
     (a, b) => a * b,
-    (varName, left, right) => new Add(
-        new Multiply(left.diff(varName), right),
-        new Multiply(left, right.diff(varName))),
+    (left, right) => ({"coefficients": [right, left]}),
     (leftSimplified, rightSimplified) =>
         isZero(leftSimplified) || isZero(rightSimplified) ? ZERO :
             isOne(leftSimplified) ? rightSimplified :
                 isOne(rightSimplified) ? leftSimplified :
                     new Multiply(leftSimplified, rightSimplified)
+
 );
 
 const Divide = createOperation('/',
     (a, b) => a / b,
-    (varName, left, right) => new Add(
-        new Divide(left.diff(varName), right),
-        new Divide(new Negate(new Multiply(left, right.diff(varName))), new Multiply(right, right))
-    ),
+    (left, right) => ({"commonDivisor": right, "coefficients": [ONE, new Divide(new Negate(left), right)]}),
     (leftSimplified, rightSimplified) =>
         isZero(leftSimplified) ? ZERO :
             isOne(rightSimplified) ? leftSimplified :
                 new Divide(leftSimplified, rightSimplified)
 );
 
-const diffOfSum = (varName, operands) => operands.map(operand => new Multiply(operand, operand.diff(varName)))
-    .reduce((sum, cur) => new Add(sum, cur))
+const createComplexSumOperation = function(argsCount, symbol, evalOperands, operation, diffCoefficients, simplifySpecificRules) {
+    function ComplexOperation (...operands) {
+        AbstractOperation.call(this, ...operands);
+        this.evaluateOperands = evalOperands(operands);
+    }
+    ComplexOperation.argsCount = argsCount;
+    ComplexOperation.prototype = Object.create(
+        createOperation(symbol, operation, diffCoefficients, simplifySpecificRules).prototype);
+    ComplexOperation.prototype.sum = (operandValues) => operandValues.reduce((sum, curVal) => sum + curVal);
+    ComplexOperation.prototype.constructor = ComplexOperation;
+    return ComplexOperation;
+};
 
-const sumOp = (operandValues, op) => operandValues.reduce((sum, curVal) => sum + op(curVal), 0);
+const square = operandValues => operandValues.map(x => x * x);
 
-const sumSquares = operandValues => sumOp(operandValues, x => x * x);
-
-const createSumSqN = argsCount => {
-    const SumSqN = createOperation('sumsq' + argsCount,
-        (...operandValues) => sumSquares(operandValues),
-        (varName, ...operands) => new Multiply(TWO, diffOfSum(varName, operands))
-    );
-    SumSqN.argsCount = argsCount;
-    return SumSqN;
-}
+const createSumSqN = argsCount => createComplexSumOperation(argsCount, 'sumsq' + argsCount,
+        operands => operands,
+        function(...operandValues) {
+            return this.sum(square(operandValues));
+        },
+        (...operands) => ({"commonMultiplier": TWO, "coefficients": operands})
+);
 
 const SumsqN = [2, 3, 4, 5].map(createSumSqN);
 const [Sumsq2, Sumsq3, Sumsq4, Sumsq5] = SumsqN;
 
-const createDistanceN = argsCount => {
-    const distanceN = createOperation('distance' + argsCount,
-        (...operandValues) => Math.sqrt(sumSquares(operandValues)),
-        function (varName, ...operands) {
-            return new Divide(diffOfSum(varName, operands), this);
-        }
-    );
-    distanceN.argsCount = argsCount;
-    return distanceN;
-}
+const createDistanceN = argsCount => createComplexSumOperation(argsCount, 'distance' + argsCount,
+    operands => operands,
+    function(...operandValues) {
+        return Math.sqrt(this.sum(square(operandValues)));
+    },
+    function (...operands) {
+        return {"commonDivisor": this, "coefficients": operands};
+    }
+);
 
 const [Distance2, Distance3, Distance4, Distance5] = [2, 3, 4, 5].map(createDistanceN);
 
-const sumExp = operandValues => sumOp(operandValues, Math.exp);
-
-const Sumexp = createOperation('sumexp',
-    (...operandValues) => sumExp(operandValues),
-    (varName, ...operands) => operands.reduce((sum, operand) => new Add(sum, new Multiply(new Exp(operand), operand.diff(varName))), ZERO)
+const Sumexp = createComplexSumOperation(Infinity, 'sumexp',
+    operands => operands.map(x => new Exp(x)),
+    function(...operandValues) {
+        return operandValues.length > 0 ? this.sum(operandValues) : 0;
+    },
+    function () {
+        return {"coefficients": this.evaluateOperands};
+    }
 );
 Sumexp.isValidArgsCount = () => count => count >= 0;
 
-const LSE = createOperation('lse',
-    (...operandValues) => Math.log(sumExp(operandValues)),
-    function(varName, ...operands) {
-        const sumInLog = new Sumexp(...operands);
-        return new Divide(sumInLog.diff(varName), sumInLog);
+const LSE = createComplexSumOperation(Infinity, 'lse',
+    operands => [new Sumexp(...operands)],
+    function(...operandValues) {
+        return Math.log(this.sum(operandValues));
+    },
+    function (...operands) {
+        return {"commonDivisor": this.evaluateOperands[0], "coefficients": operands.map(x => new Exp(x))};
     }
 );
 LSE.isValidArgsCount = () => count => count > 0;
 
 const Exp = createOperation("exp",
     a => Math.exp(a),
-    function(varName, operand)  {
-        return new Multiply(operand.diff(varName), this);
+    function() {
+        return {"coefficients": [this]};
     }
 );
 
 const Negate = createOperation('negate',
     a => -a,
-    (varName, operand) => new Negate(operand.diff(varName))
+    () => ({"coefficients": [MINUS_ONE]})
 );
+
 const literals = {'x': new Variable('x'), 'y': new Variable('y'), 'z': new Variable('z'),
-                  '0': ZERO, '1': ONE, '2': TWO, '-1': MINUS_ONE, };
+    '0': ZERO, '1': ONE, '2': TWO, '-1': MINUS_ONE, };
 const operations = {
     '+': Add, '-': Subtract, '*': Multiply, '/': Divide, "negate": Negate,
     "sumsq2": Sumsq2, "sumsq3": Sumsq3, "sumsq4": Sumsq4, "sumsq5": Sumsq5,
@@ -227,11 +240,9 @@ function createParserException(name, messageGenerator) {
     function CustomParserException(index, ...args) {
         ParserException.call(this, index, messageGenerator(...args));
     }
-
     CustomParserException.prototype = Object.create(ParserException.prototype);
     CustomParserException.prototype.name = name;
     CustomParserException.prototype.constructor = CustomParserException;
-
     return CustomParserException;
 }
 
@@ -260,7 +271,7 @@ const IndexOutOfBoundException = createParserException(
     "IndexOutOfBoundException",
     (index, str) => "Index '" + index + "' out of bounds for string '" + str + "'");
 
-const isWhitespace = str => /\s/.test(str)
+const isWhitespace = str => /\s/.test(str);
 
 function skipWhitespaces(source) {
     while (source.index < source.str.length && isWhitespace(source.str.charAt(source.index))) {
