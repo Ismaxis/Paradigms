@@ -1,16 +1,18 @@
 (require 'clojure.math)
-;; :NOTE: для констант есть стандартная функция
-(defn constant [val] (fn [& _] val))
+
+(defn division [& args]
+  (cond
+    (== (count args) 0) 1
+    (== (count args) 1) (/ 1 (double (first args)))
+    :else (reduce #(/ %1 (double %2)) args)))
+
+(def constant constantly)
 (defn variable [name] (fn [map] (get map name)))
 (defn operation [op] (fn [& args] (fn [map] (apply op (mapv #(% map) args)))))
 (def add (operation +'))
 (def subtract (operation -'))
 (def multiply (operation *'))
-(def divide (operation (fn [& args]
-                           ;; деление принимает 1+ аргумент
-                (if (== (count args) 1) (/ 1 (double (first args)))
-                                        (reduce #(/ %1 (double %2)) args)))))
-
+(def divide (operation division))
 (defn sum-of-exp [& args] (apply + (mapv clojure.math/exp args)))
 (def sumexp (operation sum-of-exp))
 (def lse (operation (fn [& args] (clojure.math/log (apply sum-of-exp args)))))
@@ -21,7 +23,7 @@
     (symbol? token) (variable (str token))
     (list? token) (apply (get operations (first token)) (mapv parseToken (rest token)))
     ))
-(defn parseFunction [str] (parseToken (read-string str)))
+(defn parseFunction [str] ((comp parseToken read-string) str))
 
 ; =============== TEST ZONE ===============
 
