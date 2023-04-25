@@ -80,7 +80,7 @@
       (Negate (Divide this (nth denominators (- i 1))))
     ))
  )))
-(def operations-obj { '+ Add, '- Subtract, '* Multiply, '/ Divide 'negate Negate }) ;, 'sumexp sumexp, 'lse lse })
+(def operations-obj { '+ Add, '- Subtract, '* Multiply, '/ Divide, 'negate Negate })
 (def parseObject (parser Constant Variable operations-obj))
 (defn evaluate [expression vars] (.eval expression vars))
 (defn toString [expression] (.toString expression))
