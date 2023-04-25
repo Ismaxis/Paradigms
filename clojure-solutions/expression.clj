@@ -1,7 +1,7 @@
 (require 'clojure.math)
+(require 'clojure.string)
 
 (defn division
-  ([] 1)
   ([arg] (/ 1 (double arg)))
   ([first & args] (/ first (double (apply * args)))))
 (defn parser [const-builder var-builder op-map]
@@ -11,8 +11,8 @@
       (symbol? token) (var-builder (str token))
       (list? token) (apply (get op-map (first token))
                            (mapv build-tree (rest token)))
-    ))](comp build-tree read-string)
-  ))
+      ))](comp build-tree read-string)
+ ))
 
 ; =============== HW-10 ===============
 
@@ -44,9 +44,10 @@
   (diff [_ _] ZERO)
   )
 (defn Constant [val] (ConstantClass. val))
+(def MINUS_ONE (Constant -1))
 (def ZERO (Constant 0))
 (def ONE (Constant 1))
-(def MINUS_ONE (Constant -1))
+(def TWO (Constant 2))
 (deftype VariableClass [name]
   Object
   (toString [this] (str (.-name this)))
@@ -62,44 +63,35 @@
   (toString [this] (str "(" symbol " " (clojure.string/join " " (mapv #(.toString %) (.-operands this))) ")"))
   Expression
   (eval [this map] (apply operation (mapv #(.eval % map) (.-operands this))))
-  (diff [this varName] (apply Add (map-indexed #(Multiply (apply getDiffCoefficient this %1 operands) (.diff %2 varName)) operands))
-  ))
+  (diff [this varName] (apply Add (map-indexed #(Multiply (apply getDiffCoefficient this %1 operands) (.diff %2 varName)) operands)))
+  )
 (defn Negate [& operands] (OperationClass. 'negate - operands (fn [& _] MINUS_ONE)))
 (defn Add [& operands] (OperationClass. '+ + operands (fn [& _] ONE)))
 (defn Subtract [& operands] (OperationClass. '- - operands
-   (fn [_ i & operands]
-     (if (zero? i) (if (== (count operands) 1) MINUS_ONE ONE) MINUS_ONE))))
+ (fn [_ i & operands] (cond
+                        (== (count operands) 1) MINUS_ONE
+                        (zero? i) ONE
+                        :else MINUS_ONE))))
 (defn Multiply [& operands] (OperationClass. '* * operands
-   (fn [_ i & operands] (apply Multiply (keep-indexed #(when ((comp not =) i %1) %2) operands)))))
+  (fn [_ i & operands] (apply Multiply (keep-indexed #(when (not= i %1) %2) operands)))))
 (defn Divide [& operands] (OperationClass. '/ division operands
- (fn [this i numerator & denominators]
+  (fn [this i numerator & denominators]
    (if (zero? (count denominators))
-    (Negate (Divide this numerator))
-    (if (== i 0)
-      (apply Divide ONE denominators)
-      (Negate (Divide this (nth denominators (- i 1))))
-    ))
- )))
-(def operations-obj { '+ Add, '- Subtract, '* Multiply, '/ Divide, 'negate Negate })
+     (Negate (Divide this numerator))
+     (if (== i 0)
+       (apply Divide ONE denominators)
+       (Negate (Divide this (nth denominators (dec i))))
+       ))
+   )))
+(defn square [x] (* x x))
+(defn meansq-eval [& operands] (/ (apply + (mapv square operands)) (count operands)))
+(defn Meansq [& operands] (OperationClass. 'meansq meansq-eval operands
+  (fn [_ i & operands] (Divide (Multiply TWO (nth operands i)) (Constant (count operands))))))
+(def rms-eval (comp clojure.math/sqrt meansq-eval))
+(defn RMS [& operands] (OperationClass. 'rms rms-eval operands
+  (fn [this i & operands] (Divide (nth operands i) (Multiply this (Constant (count operands)))))))
+(def operations-obj { '+ Add, '- Subtract, '* Multiply, '/ Divide, 'negate Negate, 'meansq Meansq, 'rms RMS })
 (def parseObject (parser Constant Variable operations-obj))
 (defn evaluate [expression vars] (.eval expression vars))
 (defn toString [expression] (.toString expression))
 (defn diff [expression varName] (.diff expression varName))
-
-; =============== TEST ZONE ===============
-
-;(def expr (diff (Divide (Variable "x")) "x"))
-;(def expr (parseObject "(- (* 2 x) 1)"))
-;(println (toString expr))
-;(println (evaluate expr {"z" 1.0, "x" 1.0, "y" 1.0}))
-;(def diffed (diff expr "x"))
-;(println diffed)
-;(println (toString diffed))
-;(println (evaluate diffed {"x" 2}))
-
-;(def expr-str "(+ 1 (* x 2))")
-;(def print-t (comp println type))
-;(def parsed (parseFunction expr-str))
-;;(def parsed (sumexp (variable "x")))
-;(print-t parsed)
-;(println (parsed {"z" 0.0, "x" 1.0, "y" 0.0}))
