@@ -44,9 +44,10 @@
   (diff [_ _] ZERO)
   )
 (defn Constant [val] (ConstantClass. val))
+(def MINUS_ONE (Constant -1))
 (def ZERO (Constant 0))
 (def ONE (Constant 1))
-(def MINUS_ONE (Constant -1))
+(def TWO (Constant 2))
 (deftype VariableClass [name]
   Object
   (toString [this] (str (.-name this)))
@@ -80,7 +81,26 @@
       (Negate (Divide this (nth denominators (- i 1))))
     ))
  )))
-(def operations-obj { '+ Add, '- Subtract, '* Multiply, '/ Divide 'negate Negate }) ;, 'sumexp sumexp, 'lse lse })
+(def symbol-concat (comp symbol str))
+(defn sumsq-eval [& operands] (apply + (mapv #(* % %) operands)))
+(defn Sumsq [argsCount & operands] (OperationClass. (symbol-concat 'sumsq argsCount) sumsq-eval operands
+  (fn [_ i & operands] (Multiply TWO (nth operands i)))
+ ))
+(def Sumsq2 (partial Sumsq 2))
+(def Sumsq3 (partial Sumsq 3))
+(def Sumsq4 (partial Sumsq 4))
+(def Sumsq5 (partial Sumsq 5))
+(defn distance-eval [& operands] (clojure.math/sqrt (apply sumsq-eval operands)))
+(defn Distance [argsCount & operands] (OperationClass. (symbol-concat 'distance argsCount) distance-eval operands
+  (fn [this i & operands] (Divide (nth operands i) this))
+ ))
+(def Distance2 (partial Distance 2))
+(def Distance3 (partial Distance 3))
+(def Distance4 (partial Distance 4))
+(def Distance5 (partial Distance 5))
+(def operations-obj { '+ Add, '- Subtract, '* Multiply, '/ Divide, 'negate Negate,
+     'sumsq2 Sumsq2, 'sumsq3 Sumsq3, 'sumsq4 Sumsq4, 'sumsq5 Sumsq5,
+     'distance2 Distance2, 'distance3 Distance3, 'distance4 Distance4, 'distance5 Distance5 })
 (def parseObject (parser Constant Variable operations-obj))
 (defn evaluate [expression vars] (.eval expression vars))
 (defn toString [expression] (.toString expression))
@@ -88,10 +108,10 @@
 
 ; =============== TEST ZONE ===============
 
-;(def expr (diff (Divide (Variable "x")) "x"))
-;(def expr (parseObject "(- (* 2 x) 1)"))
+;(def expr (Distance2 (Constant 2.0) (Constant 3.0)))
+;(def expr (parseObject "(sumsq2 2.0 3.0)"))
 ;(println (toString expr))
-;(println (evaluate expr {"z" 1.0, "x" 1.0, "y" 1.0}))
+;(println (evaluate expr {"z" 0.0, "x" 0.0, "y" 0.0}))
 ;(def diffed (diff expr "x"))
 ;(println diffed)
 ;(println (toString diffed))
