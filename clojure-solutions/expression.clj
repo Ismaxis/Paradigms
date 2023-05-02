@@ -52,12 +52,13 @@
 (def ZERO (Constant 0))
 (def ONE (Constant 1))
 (def TWO (Constant 2))
+(defn varName-to-key [name] (str (Character/toLowerCase^char (get name 0))))
 (deftype VariableClass [name]
   Object
-  (toString [this] (str (.-name this)))
+  (toString [_] (str name))
   Expression
-  (eval [this map] (get map (.toString this)))
-  (diff [this varName] (if (= (.toString this) varName) ONE ZERO))
+  (eval [_ map] (get map (varName-to-key name)))
+  (diff [_ varName] (if (= name varName) ONE ZERO))
   (toStringInfix [this] (.toString this))
   )
 
@@ -78,6 +79,7 @@
 (defn toStringInfix-unary [symbol operands]
   (str symbol "(" (toStringInfix (nth operands 0)) ")"))
 (defn Negate [& operands] (OperationClass. 'negate - operands (fn [& _] MINUS_ONE) toStringInfix-unary))
+(defn Not [& operands] (OperationClass. 'not #(not %) operands (constantly 'error) toStringInfix-unary))
 
 (defn toStringInfix-binary [symbol operands]
   (let [nth-operand (comp toStringInfix (partial nth operands))]
@@ -105,7 +107,21 @@
 (defn RMS [& operands] (OperationClass. 'rms rms-eval operands
   (fn [this i & operands] (Divide (nth operands i) (Multiply this (Constant (count operands))))) toStringInfix-binary))
 
-(def operations-obj { '+ Add, '- Subtract, '* Multiply, '/ Divide, 'negate Negate, 'meansq Meansq, 'rms RMS })
+; =============== HW-12 BOOLEAN ===============
+(def to-bool (partial < 0))
+(defn to-number [bool] (if bool 1 0))
+(defn create-bool-op [op] (fn [a b] (to-number (op (to-bool a) (to-bool b)))))
+(defn And [& operands] (OperationClass. '&& (create-bool-op #(and %1 %2)) operands
+                                        (constantly 'error) toStringInfix-binary))
+(defn Or [& operands] (OperationClass. '|| (create-bool-op #(or %1 %2)) operands
+                                       (constantly 'error) toStringInfix-binary))
+(defn Xor [& operands] (OperationClass. (symbol "^^") (create-bool-op #(not= %1 %2)) operands
+                                        (constantly 'error) toStringInfix-binary))
+
+(def operations-obj { '+ Add, '- Subtract, '* Multiply, '/ Divide, 'negate Negate,
+                     'meansq Meansq, 'rms RMS,
+                     '&& And, '|| Or, (symbol "^^") Xor, 'not Not })
+
 (def parseObject (parser Constant Variable operations-obj))
 (defn evaluate [expression vars] (.eval expression vars))
 (defn toString [expression] (.toString expression))
@@ -114,43 +130,50 @@
 ; ============================== HW-12 ==============================
 
 (load-file "parser.clj")
-(def *take-if _char)
+(def +take-if _char)
 (def *str-from-seq (comp +str +seq))
 (defn *string [s] (apply *str-from-seq (mapv (comp +char str) (seq s))))
-(def *space (*take-if #(Character/isWhitespace %)))
+(def *space (+take-if #(Character/isWhitespace^char %)))
 (def *ws ((comp +ignore +star) *space))
 (def *skip-ws (partial +seqn 0 *ws))
-(def *digit (*take-if #(Character/isDigit %)))
+(def *digit (+take-if #(Character/isDigit^char %)))
 (def *decimal-point (*str-from-seq (+char ".") (+plus *digit)))
 (def *unsigned (*str-from-seq ((comp +str +plus) *digit) (+opt *decimal-point)))
 (def *number (+map read-string (*str-from-seq (+opt (+char "-")) *unsigned)))
 (def *const (+map Constant (*skip-ws *number)))
-(def *identifier (+char "xyz"))
-(def *var (+map Variable (*skip-ws *identifier)))
+(def *var-name ((comp +str +plus +char) "xyzXYZ"))
+(def *var (+map Variable (*skip-ws *var-name)))
 (declare *primitive)
-(def *negate (+map Negate (*skip-ws (+seqn 1 (*string "negate") *ws (delay *primitive)))))
+(defn *parse-unary [symbol ctor] (+map ctor (*skip-ws (+seqn 1 (*string symbol) *ws (delay *primitive)))))
+(def *not (*parse-unary "not" Not))
+(def *negate (*parse-unary "negate" Negate))
 (declare smallest-priority)
 (def *brackets (delay (+seqn 1 (+char "(") *ws smallest-priority *ws (+char ")"))))
-(def *primitive (+or *negate *const *var *brackets))
+(def *primitive (+or *negate *not *const *var *brackets))
 (def build-binary-tree (partial reduce (fn [sum [op val]] ((operations-obj ((comp symbol str) op)) sum val))))
 (defn *parse-priority [symbols-parser next-priority]
   (+map build-binary-tree
         (+seqf cons next-priority (+star (+seq *ws symbols-parser *ws next-priority)))))
 (def *mul-and-div (*parse-priority (+char "*/") *primitive))
 (def *add-and-sub (*parse-priority (+char "+-") *mul-and-div))
-(def smallest-priority (delay *add-and-sub))
+(defn *parse-boolean [symbol next-priority] (*parse-priority (*string symbol) next-priority))
+(def *and (*parse-boolean "&&" *add-and-sub))
+(def *or (*parse-boolean "||" *and))
+(def *xor (*parse-boolean "^^" *or))
+(def smallest-priority (delay *xor))
 (def parseObjectInfix (+parser (+seqn 0 *ws smallest-priority *ws)))
 (defn toStringInfix [expression] (.toStringInfix expression))
 
 ; =============== TEST ZONE ===============
 
-;(def expr-str " (5.0  /   z)     ")
-;(def expr (parseObjectInfix expr-str))
-;(println "")
-;(println expr)
-;(println "")
-;(println (toString expr))
-;(println "")
-;(println (toStringInfix expr))
-;(println "")
-;(println (evaluate expr {"x" 1, "y" 2, "z" 1}))
+(println (operations-obj '&&))
+(def expr-str "1&&0")
+(def expr (parseObjectInfix expr-str))
+(println "")
+(println expr)
+(println "")
+(println (toString expr))
+(println "")
+(println (toStringInfix expr))
+(println "")
+(println (evaluate expr {"x" 0.0, "y" 2, "z" 1}))
