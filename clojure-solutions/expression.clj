@@ -79,7 +79,6 @@
 (defn toStringInfix-unary [symbol operands]
   (str symbol "(" (toStringInfix (nth operands 0)) ")"))
 (defn Negate [& operands] (OperationClass. 'negate - operands (fn [& _] MINUS_ONE) toStringInfix-unary))
-(defn Not [& operands] (OperationClass. 'not #(not %) operands (constantly 'error) toStringInfix-unary))
 
 (defn toStringInfix-binary [symbol operands]
   (let [nth-operand (comp toStringInfix (partial nth operands))]
@@ -110,7 +109,8 @@
 ; =============== HW-12 BOOLEAN ===============
 (def to-bool (partial < 0))
 (defn to-number [bool] (if bool 1 0))
-(defn create-bool-op [op] (fn [a b] (to-number (op (to-bool a) (to-bool b)))))
+(defn create-bool-op [op] (fn [& operands] (to-number (apply op (mapv to-bool operands)))))
+(defn Not [& operands] (OperationClass. '! (create-bool-op #(not %)) operands (constantly 'error) toStringInfix-unary))
 (defn And [& operands] (OperationClass. '&& (create-bool-op #(and %1 %2)) operands
                                         (constantly 'error) toStringInfix-binary))
 (defn Or [& operands] (OperationClass. '|| (create-bool-op #(or %1 %2)) operands
@@ -120,7 +120,7 @@
 
 (def operations-obj { '+ Add, '- Subtract, '* Multiply, '/ Divide, 'negate Negate,
                      'meansq Meansq, 'rms RMS,
-                     '&& And, '|| Or, (symbol "^^") Xor, 'not Not })
+                     '&& And, '|| Or, (symbol "^^") Xor, '! Not })
 
 (def parseObject (parser Constant Variable operations-obj))
 (defn evaluate [expression vars] (.eval expression vars))
@@ -145,7 +145,7 @@
 (def *var (+map Variable (*skip-ws *var-name)))
 (declare *primitive)
 (defn *parse-unary [symbol ctor] (+map ctor (*skip-ws (+seqn 1 (*string symbol) *ws (delay *primitive)))))
-(def *not (*parse-unary "not" Not))
+(def *not (*parse-unary "!" Not))
 (def *negate (*parse-unary "negate" Negate))
 (declare smallest-priority)
 (def *brackets (delay (+seqn 1 (+char "(") *ws smallest-priority *ws (+char ")"))))
