@@ -20,3 +20,5 @@ g(C, N, MAX) :-
 
 prime(N) :- min_divisor(N, D), D = N.
 prime(N) :- \+ min_divisor(N, _).
+
+composite(N) :- \+ prime(N).
