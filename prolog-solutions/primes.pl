@@ -24,23 +24,48 @@ prime(N) :- \+ min_divisor(N, _).
 composite(N) :- \+ prime(N).
 
 sorted_primes(_, []).
-sorted_primes(MAX_IN_HEAD, [H]) :- MAX_IN_HEAD =< H, prime(H).
-sorted_primes(MAX_IN_HEAD, [H1, H2 | T]) :-
-    MAX_IN_HEAD =< H1,
-    H1 =< H2,
-    prime(H1),
-    prime(H2),
-    sorted_primes(H2, T).
+sorted_primes(MAX_IN_HEAD, [H | T]) :-
+    MAX_IN_HEAD =< H, prime(H), sorted_primes(H, T).
 
 prime_divisors(1, []) :- !.
 prime_divisors(N, [N]) :- number(N), prime(N), !.
-prime_divisors(N, [H | T]) :-
+prime_divisors(N, [H | T]) :-                                 %# N -> [H | T]
     number(N),
     min_divisor(N, H),
     N1 is N // H,
-    prime_divisors(N1, T).
-prime_divisors(N, [H | T]) :-
-    \+ number(N), number(H),
+    prime_divisors(N1, T), !.
+prime_divisors(N, [H | T]) :-                                 %# [H | T] -> N
+    \+ number(N),
     sorted_primes(0, [H | T]),
     prime_divisors(N1, T),
     N is N1 * H.
+
+%# ==================================== Compact ====================================
+compact([H], [(H, 1)]) :- !.
+compact([H | T], [C_H | C_T]) :-
+    compact(T, [(Divisor, Power) | C_T]),
+    H = Divisor,
+    inc((Divisor, Power), C_H), !.
+compact([H | T], [(H, 1) | C_T]) :-
+     compact(T, C_T).
+
+inc((D, P), (D, P1)) :- P1 is P + 1.
+
+sorted_compact_primes(_, []).
+sorted_compact_primes(MAX_IN_HEAD, [(H, _) | T]) :-
+    MAX_IN_HEAD =< H, prime(H), sorted_compact_primes(H, T).
+
+compact_prime_divisors(1, []) :- !.
+compact_prime_divisors(N, C_D) :-                             %# N -> C_D
+    number(N),
+    prime_divisors(N, Divisors),
+    compact(Divisors, C_D).
+
+compact_prime_divisors(N, [(D, P)]) :-                        %# [(D, P)] -> N
+    \+ number(N),
+    N is round(D ** P), !.
+compact_prime_divisors(N, [(D, P) | T]) :-                    %# [(D, P) | T] -> N
+    \+ number(N),
+    sorted_compact_primes(0, [(D, P) | T]),
+    compact_prime_divisors(N1, T),
+    N is N1 * round(D ** P).
