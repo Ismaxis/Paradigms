@@ -77,7 +77,7 @@
 
 (declare toStringInfix)
 (defn toStringInfix-unary [symbol operands]
-  (str symbol "(" (toStringInfix (nth operands 0)) ")"))
+  (str symbol " " (toStringInfix (nth operands 0))))
 (defn Negate [& operands] (OperationClass. 'negate - operands (fn [& _] MINUS_ONE) toStringInfix-unary))
 
 (defn toStringInfix-binary [symbol operands]
@@ -166,14 +166,14 @@
 
 ; =============== TEST ZONE ===============
 
-(println (operations-obj '&&))
-(def expr-str "1&&0")
-(def expr (parseObjectInfix expr-str))
-(println "")
-(println expr)
-(println "")
-(println (toString expr))
-(println "")
-(println (toStringInfix expr))
-(println "")
-(println (evaluate expr {"x" 0.0, "y" 2, "z" 1}))
+;(println (operations-obj '&&))
+;(def expr-str "1&&0")
+;(def expr (parseObjectInfix expr-str))
+;(println "")
+;(println expr)
+;(println "")
+;(println (toString expr))
+;(println "")
+;(println (toStringInfix expr))
+;(println "")
+;(println (evaluate expr {"x" 0.0, "y" 2, "z" 1}))
