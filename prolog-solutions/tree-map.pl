@@ -12,13 +12,13 @@ calc_height_and_set(node(K, V, Left, Right, _), node(K, V, Left, Right, Height))
 
 get_balance(node(_, _, Left, Right, _), R) :- get_height(Left, HL), get_height(Right, HR), R is HL - HR.
 
-% ===== BUILD =====
+%# ===== BUILD =====
 map_build([], empty_map) :- !.
 map_build([(K, V) | T], R) :-
     map_build(T, R1),
     map_put(R1, K, V, R).
 
-% ===== GET =====
+%# ===== GET =====
 map_get(node(K, V, _, _, _), K, V) :- !.
 map_get(node(K1, _, Left, _, _), K, V) :-
     K < K1, !,
@@ -27,7 +27,7 @@ map_get(node(K1, _, _, Right, _), K, V) :-
     K > K1,
     map_get(Right, K, V).
 
-% ===== PUT =====
+%# ===== PUT =====
 put_cond(KL, K) :- K < KL.
 put_cond(KR, K) :- K > KR.
 
@@ -49,11 +49,11 @@ put(node(KN, VN, Left, Right, H), K, V, [Recur, _], R) :-
 take_new(_, V, V).
 map_put(Node, K, V, R) :- put(Node, K, V, [map_put, take_new], R).
 
-% ===== PUT-IF-ABSENT =====
+%# ===== PUT-IF-ABSENT =====
 take_old(V, _, V).
 map_putIfAbsent(Node, K, V, R) :- put(Node, K, V, [map_putIfAbsent, take_old], R).
 
-% ===== REMOVE =====
+%# ===== REMOVE =====
 remove_cond(B, _) :- 0 =< B.
 remove_cond(B, _) :- 0 >= B.
 
@@ -73,7 +73,7 @@ map_remove(node(KN, VN, Left, Right, H), K, R) :-
     map_remove(Right, K, R1),
     check_for_disbalance(node(KN, VN, Left, R1, H), _, [get_balance, remove_cond], R).
 
-% ===== BALANCE =====
+%# ===== BALANCE =====
 check_for_disbalance(Node, K, Fs, R) :-
     get_balance(Node, B),
     B > 1,
