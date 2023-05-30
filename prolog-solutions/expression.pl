@@ -4,7 +4,7 @@
 operation(op_add, A, B, R) :- R is A + B.
 operation(op_subtract, A, B, R) :- R is A - B.
 operation(op_multiply, A, B, R) :- R is A * B.
-operation(op_divide, A, 0, A) :- !.
+operation(op_divide, A, 0, A) :- !. % :NOTE: ?
 operation(op_divide, A, B, R) :- R is A / B.
 operation(op_negate, A, R) :- R is -A.
 
@@ -23,6 +23,7 @@ operation(op_and, A, B, 1) :- to_bool(A), to_bool(B), !.
 operation(op_and, A, B, 0).
 operation(op_or, A, B, 1) :- (to_bool(A), !); to_bool(B), !.
 operation(op_or, A, B, 0).
+% :NOTE: simplify
 operation(op_xor, A, B, 1) :- (\+ to_bool(A), to_bool(B), !); (to_bool(A), \+ to_bool(B)), !.
 operation(op_xor, A, B, 0).
 
@@ -90,7 +91,7 @@ infix_p(const(Value)) -->
 infix_p(variable(Name)) -->
     { nonvar(Name, atom_chars(Name, Chars)) },
     varname_p(Chars),
-    { Chars = [_ | _], atom_chars (Name, Chars)}.
+    { Chars = [_ | _], atom_chars(Name, Chars)}.
 infix_p(operation(BinOp, A, B)) -->
     ['('], ws_p, infix_p(A), ws_p_plus, op_p(BinOp), ws_p_plus, infix_p(B), ws_p, [')'].
 infix_p(operation(UnOp, A)) --> op_p(UnOp), ws_p_plus, infix_p(A).
