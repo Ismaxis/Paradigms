@@ -16,8 +16,6 @@ op_p(op_negate) --> { atom_chars("negate", C) }, C.
 
 %# ===== VAR-BOOLEAN =====
 to_bool(N) :- N > 0.
-from_bool(true, 1).
-from_bool(false, 0).
 
 operation(op_not, A, 1) :- \+ to_bool(A), !.
 operation(op_not, A, 0).
