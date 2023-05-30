@@ -50,7 +50,7 @@ nonvar(V, T) :- nonvar(V), call(T).
 all_member([], _).
 all_member([H | T], Values) :- member(H, Values), all_member(T, Values).
 
-is_digit(C) :- member(C, ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']).
+is_digit(C) :- atom_chars("0123456789", N), member(C, N).
 is_varname_part(C) :- atom_chars("xyzXYZ", XYZ), member(C, XYZ).
 
 first_letter(S, H) :- atom_chars(S, [H | T]).
