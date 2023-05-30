@@ -19,14 +19,14 @@ to_bool(N) :- N > 0.
 from_bool(true, 1).
 from_bool(false, 0).
 
-operation(op_not, A, 1) :- \+ to_bool(A).
-operation(op_not, A, 0) :- to_bool(A).
-operation(op_and, A, B, 1) :- to_bool(A), to_bool(B).
-operation(op_and, A, B, 0) :- \+ (to_bool(A), to_bool(B)).
-operation(op_or, A, B, 1) :- (to_bool(A), !); to_bool(B).
-operation(op_or, A, B, 0) :- \+ (to_bool(A); to_bool(B)).
-operation(op_xor, A, B, 1) :- (\+ to_bool(A), to_bool(B)); (to_bool(A), \+ to_bool(B)).
-operation(op_xor, A, B, 0) :- (to_bool(A), to_bool(B)); (\+ to_bool(A), \+ to_bool(B)).
+operation(op_not, A, 1) :- \+ to_bool(A), !.
+operation(op_not, A, 0).
+operation(op_and, A, B, 1) :- to_bool(A), to_bool(B), !.
+operation(op_and, A, B, 0).
+operation(op_or, A, B, 1) :- (to_bool(A), !); to_bool(B), !.
+operation(op_or, A, B, 0).
+operation(op_xor, A, B, 1) :- (\+ to_bool(A), to_bool(B), !); (to_bool(A), \+ to_bool(B)), !.
+operation(op_xor, A, B, 0).
 
 op_p(op_not) --> ['!'].
 op_p(op_and) --> { atom_chars("&&", C) }, C.
