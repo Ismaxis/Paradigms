@@ -11,14 +11,14 @@ public class BinarySearchUni {
     // Post: min(R) is printed to System.out
     public static void main(String[] args) {
         int[] a = new int[args.length];
-        int sum = 0;
+        boolean odd = false;
         for (int i = 0; i < args.length; i++) {
             a[i] = Integer.parseInt(args[i]);
-            sum += a[i];
+            odd ^= (Math.abs(a[i]) & 1) == 1;
         }
 
         int minLength;
-        if (sum % 2 == 1) {
+        if (odd) {
             minLength = iterativeBinSearch(a);
         }
         else {
