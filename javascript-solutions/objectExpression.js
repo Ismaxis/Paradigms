@@ -136,41 +136,33 @@ const Divide = createOperation('/',
                 new Divide(leftSimplified, rightSimplified)
 );
 
-const createComplexSumOperation = function(argsCount, symbol, evalOperands, operation, diffCoefficients, simplifySpecificRules) {
+const createComplexSumOperation = function(argsCount, symbol, operation, diffCoefficients, simplifySpecificRules) {
     function ComplexOperation (...operands) {
         AbstractOperation.call(this, ...operands);
-        this.evaluateOperands = evalOperands(operands);
     }
     ComplexOperation.argsCount = argsCount;
     ComplexOperation.prototype = Object.create(
         createOperation(symbol, operation, diffCoefficients, simplifySpecificRules).prototype);
-    ComplexOperation.prototype.sum = (operandValues) => operandValues.reduce((sum, curVal) => sum + curVal, 0);
     ComplexOperation.prototype.constructor = ComplexOperation;
     return ComplexOperation;
 };
 
+const sum = operandValues => operandValues.reduce((sum, curVal) => sum + curVal, 0);
 const square = operandValues => operandValues.map(x => x * x);
-
+const sumsq = (...operandValues) => sum(square(operandValues));
 const createSumSqN = argsCount => createComplexSumOperation(
     argsCount,
     'sumsq' + argsCount,
-    operands => operands,
-    function(...operandValues) {
-        return this.sum(square(operandValues));
-    },
+    sumsq,
     (...operands) => ({commonMultiplier: TWO, coefficients: operands})
 );
 
-const SumsqN = [2, 3, 4, 5].map(createSumSqN);
-const [Sumsq2, Sumsq3, Sumsq4, Sumsq5] = SumsqN;
+const [Sumsq2, Sumsq3, Sumsq4, Sumsq5] = [2, 3, 4, 5].map(createSumSqN);
 
 const createDistanceN = argsCount => createComplexSumOperation(
     argsCount,
     'distance' + argsCount,
-    operands => operands,
-    function(...operandValues) {
-        return Math.sqrt(this.sum(square(operandValues)));
-    },
+    (...operandValues) => Math.sqrt(sumsq(...operandValues)),
     function (...operands) {
         return {"commonDivisor": this, "coefficients": operands};
     }
@@ -178,37 +170,24 @@ const createDistanceN = argsCount => createComplexSumOperation(
 
 const [Distance2, Distance3, Distance4, Distance5] = [2, 3, 4, 5].map(createDistanceN);
 
+const exp = operandValues => operandValues.map(Math.exp);
+const sumexp = (...operandValues) => sum(exp(operandValues));
+const expDiffCoeffs = operands => operands.map(x => new Sumexp(x));
 const Sumexp = createComplexSumOperation(
     Infinity,
     'sumexp',
-    operands => operands.map(x => new Exp(x)),
-    function(...operandValues) {
-        return operandValues.length > 0 ? this.sum(operandValues) : 0;
-    },
-    function () {
-        return {"coefficients": this.evaluateOperands};
-    }
+    sumexp,
+    (...operands) => ({"coefficients": expDiffCoeffs(operands)})
 );
 Sumexp.isValidArgsCount = () => count => count >= 0;
 
-const LSE = createComplexSumOperation(Infinity, 'lse',
-    operands => [new Sumexp(...operands)],
-    function(...operandValues) {
-        return Math.log(this.sum(operandValues));
-    },
-    function (...operands) {
-        // :NOTE: diff
-        return {"commonDivisor": this.evaluateOperands[0], "coefficients": operands.map(x => new Exp(x))};
-    }
+const LSE = createComplexSumOperation(
+    Infinity,
+    'lse',
+    (...operandValues) => Math.log(sumexp(...operandValues)),
+    (...operands) => ({"commonDivisor": new Sumexp(...operands), "coefficients": expDiffCoeffs(operands)})
 );
 LSE.isValidArgsCount = () => count => count > 0;
-
-const Exp = createOperation("exp",
-    a => Math.exp(a), // :NOTE: a => Math.exp(a)
-    function() {
-        return {coefficients: [this]};
-    }
-);
 
 const Negate = createOperation('negate',
     a => -a,
