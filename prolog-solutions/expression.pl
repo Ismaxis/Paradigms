@@ -1,45 +1,50 @@
 :- load_library('alice.tuprolog.lib.DCGLibrary').
 
 %# ===== OPERATIONS ======
+%# --- base ---
 operation(op_add, A, B, R) :- R is A + B.
 operation(op_subtract, A, B, R) :- R is A - B.
 operation(op_multiply, A, B, R) :- R is A * B.
-operation(op_divide, A, 0, A) :- !. % :NOTE: ?
 operation(op_divide, A, B, R) :- R is A / B.
 operation(op_negate, A, R) :- R is -A.
 
-op_p(op_add) --> ['+'].
-op_p(op_subtract) --> ['-'].
-op_p(op_multiply) --> ['*'].
-op_p(op_divide) --> ['/'].
-op_p(op_negate) --> { atom_chars("negate", C) }, C.
-
-%# ===== VAR-BOOLEAN =====
+%# --- var-boolean ---
 to_bool(N) :- N > 0.
 
-operation(op_not, A, 1) :- \+ to_bool(A), !.
-operation(op_not, A, 0).
-operation(op_and, A, B, 1) :- to_bool(A), to_bool(B), !.
-operation(op_and, A, B, 0).
-operation(op_or, A, B, 1) :- (to_bool(A), !); to_bool(B), !.
-operation(op_or, A, B, 0).
-% :NOTE: simplify
-operation(op_xor, A, B, 1) :- (\+ to_bool(A), to_bool(B), !); (to_bool(A), \+ to_bool(B)), !.
-operation(op_xor, A, B, 0).
+operation(op_not, A, 1.0) :- \+ to_bool(A), !.
+operation(op_not, A, 0.0).
+operation(op_and, A, B, 1.0) :- to_bool(A), to_bool(B), !.
+operation(op_and, A, B, 0.0).
+operation(op_or, A, B, 1.0) :- (to_bool(A), !); (to_bool(B), !).
+operation(op_or, A, B, 0.0).
+xor(A, B) :- \+ to_bool(A), !, to_bool(B).
+xor(A, B) :- \+ to_bool(B).
+operation(op_xor, A, B, 1.0) :- xor(A, B), !.
+operation(op_xor, A, B, 0.0).
 
-op_p(op_not) --> ['!'].
-op_p(op_and) --> { atom_chars("&&", C) }, C.
-op_p(op_or) --> { atom_chars("||", C) }, C.
-op_p(op_xor) --> { atom_chars("^^", C) }, C.
+%# --- base ---
+op(Symbol) --> { atom_chars(Symbol, C) }, C.
+
+op_p(op_add) --> op("+").
+op_p(op_subtract) --> op("-").
+op_p(op_multiply) --> op("*").
+op_p(op_divide) --> op("/").
+op_p(op_negate) --> op("negate").
+
+%# --- var-boolean ---
+op_p(op_not) --> op("!").
+op_p(op_and) --> op("&&").
+op_p(op_or) --> op("||").
+op_p(op_xor) --> op("^^").
 
 %# ===== EVAL =====
 evaluate(const(Value), _, Value).
 evaluate(variable(Name), Vars, R) :- first_letter(Name, K), lookup(K, Vars, R).
 evaluate(operation(UnOp, A), Vars, R) :- evaluate(A, Vars, AV), operation(UnOp, AV, R).
-evaluate(operation(Op, A, B), Vars, R) :-
+evaluate(operation(BinOp, A, B), Vars, R) :-
     evaluate(A, Vars, AV),
     evaluate(B, Vars, BV),
-    operation(Op, AV, BV, R).
+    operation(BinOp, AV, BV, R).
 
 %# ===== HELPERS =====
 lookup(K, [(K, V) | _], V).
@@ -51,10 +56,13 @@ nonvar(V, T) :- nonvar(V), call(T).
 all_member([], _).
 all_member([H | T], Values) :- member(H, Values), all_member(T, Values).
 
-is_digit(C) :- atom_chars("0123456789", N), member(C, N).
-is_varname_part(C) :- atom_chars("xyzXYZ", XYZ), member(C, XYZ).
+str_member(Str, Ch) :- atom_chars(Str, Chs), member(Ch, Chs). 
 
-first_letter(S, H) :- atom_chars(S, [H | T]).
+is_digit(Ch) :- str_member("0123456789", Ch).
+
+is_varname_part(Ch) :- str_member("xyzXYZ", Ch).
+
+first_letter(Str, H) :- atom_chars(Str, [H | T]).
 
 number_p([]) --> [].
 number_p(L) --> negative_p(L).
@@ -75,7 +83,7 @@ digits_p([H | T], Next) --> { is_digit(H) }, [H], call_p(T, Next).
 
 call_p(T, Next) --> { G =.. [Next, T] }, G.
 
-plus_p(S, Next) --> [S], Next.
+plus_p(Ch, Next) --> [Ch], Next.
 ws_p_plus --> plus_p(' ', ws_p).
 ws_p --> [].
 ws_p --> [' '], ws_p.
