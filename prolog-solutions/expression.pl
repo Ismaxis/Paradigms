@@ -15,7 +15,8 @@ operation(op_not, A, 1.0) :- \+ to_bool(A), !.
 operation(op_not, A, 0.0).
 operation(op_and, A, B, 1.0) :- to_bool(A), to_bool(B), !.
 operation(op_and, A, B, 0.0).
-operation(op_or, A, B, 1.0) :- (to_bool(A), !); (to_bool(B), !).
+operation(op_or, A, B, 1.0) :- to_bool(A), !.
+operation(op_or, A, B, 1.0) :- to_bool(B), !.
 operation(op_or, A, B, 0.0).
 xor(A, B) :- \+ to_bool(A), !, to_bool(B).
 xor(A, B) :- \+ to_bool(B).
@@ -89,7 +90,7 @@ ws_p --> [].
 ws_p --> [' '], ws_p.
 
 varname_p([]) --> [].
-varname_p([H | T]) --> { is_varname_part(H) }, [H], call_p(T, varname_p).
+varname_p([H | T]) --> { is_varname_part(H) }, [H], varname_p(T).
 
 %# ===== INFIX =====
 infix_p(const(Value)) -->
