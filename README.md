@@ -8,13 +8,12 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
 
 [Условия домашних заданий](https://www.kgeorgiy.info/courses/paradigms/homeworks.html)
 
+
 ## Домашнее задание 15. Разбор выражений на Prolog
 
 Модификации
  * *Base*
     * Код должен находиться в файле `prolog-solutions/expression.pl`.
-    * [Исходный код тестов](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/prolog/prtest/parsing/ParserTest.java)
-        * Запускать c указанием модификации и типа (`polish` или `infix`).
  * *SinCos* (32, 34). Дополнительно реализовать поддержку:
     * унарных операций:
         * `op_sin` (`sin`) – синус, `sin(4846147)` примерно равно 1;
@@ -45,8 +44,6 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
 Модификации
  * *Базовая*
     * Код должен находиться в файле `prolog-solutions/tree-map.pl`.
-    * [Исходный код тестов](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/prolog/prtest/tree/TreeTest.java)
-        * Запускать c указанием сложности (`easy` или `hard`) и модификации
  * *Keys* (32, 34)
     * Добавьте правило:
         * `map_keys(Map, Keys)`, возвращающее ключи в порядке возрастания.
@@ -71,8 +68,6 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
 Модификации
  * *Базовая*
     * Код должен находиться в файле `prolog-solutions/primes.pl`.
-    * [Исходный код тестов](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/prolog/prtest/primes/PrimesTest.java)
-        * Запускать c указанием сложности (`easy`, `hard` или `bonus`) и модификации.
  * *Square* (32, 34)
     * Добавьте правило `square_divisors(N, D)`, возвращающее делители N²:
       `square_divisors(6, [2, 2, 3, 3])`.
@@ -90,7 +85,7 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
         `divisors_divisors(12, [[], [2], [3], [2,2], [2,3], [2,2,3]])`.
 
 Для запуска тестов можно использовать скрипты
-[TestProlog.cmd](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/prolog/TestProlog.cmd) и [TestProlog.sh](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/prolog/TestProlog.sh)
+[TestProlog.cmd](prolog/TestProlog.cmd) и [TestProlog.sh](prolog/TestProlog.sh)
  * Репозиторий должен быть скачан целиком.
  * Скрипты должны находиться в каталоге `prolog`
     (их нельзя перемещать, но можно вызывать из других каталогов).
@@ -101,25 +96,21 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
 
 ## Исходный код к лекциям по Prolog
 
-Запуск Prolog
- * [Windows](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/prolog/RunProlog.cmd)
- * [*nix](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/prolog/RunProlog.sh)
-
 Лекция 1. Факты, правила и вычисления
- * [Учебный план](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/prolog/examples/1_1_plan.pl)
- * [Вычисления](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/prolog/examples/1_2_calc.pl)
- * [Списки](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/prolog/examples/1_3_lists.pl)
- * [Правила высшего порядка](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/prolog/examples/1_4_high-order.pl)
+ * [Учебный план](examples/prolog/examples/1_1_plan.pl)
+ * [Вычисления](examples/prolog/examples/1_2_calc.pl)
+ * [Списки](examples/prolog/examples/1_3_lists.pl)
+ * [Правила высшего порядка](examples/prolog/examples/1_4_high-order.pl)
 
 Лекция 2. Задачи, унификация и объекты
- * [Задача о расстановке ферзей](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/prolog/examples/2_1_queens.pl)
- * [Задача Эйнштейна](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/prolog/examples/2_2_einstein.pl)
- * [Арифметические выражения](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/prolog/examples/2_3_expressions.pl)
+ * [Задача о расстановке ферзей](examples/prolog/examples/2_1_queens.pl)
+ * [Задача Эйнштейна](examples/prolog/examples/2_2_einstein.pl)
+ * [Арифметические выражения](examples/prolog/examples/2_3_expressions.pl)
 
 Лекция 3. Преобразование в строку и разбор
- * [Преобразование через термы](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/prolog/examples/3_1_terms.pl)
- * [Преобразование через списки](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/prolog/examples/3_2_chars.pl)
- * [Грамматики](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/prolog/examples/3_3_grammar.pl)
+ * [Преобразование через термы](examples/prolog/examples/3_1_terms.pl)
+ * [Преобразование через списки](examples/prolog/examples/3_2_chars.pl)
+ * [Грамматики](examples/prolog/examples/3_3_grammar.pl)
 
 
 ## Домашнее задание 12. Комбинаторные парсеры
@@ -127,8 +118,6 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
 Модификации
  * *Base*
     * Код должен находиться в файле `clojure-solutions/expression.clj`.
-    * [Исходный код тестов](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/cljtest/parsing/ParserTest.java)
-        * Запускать c указанием модификации и сложности (`easy` или `hard`).
  * *Variables*. Дополнительно реализовать поддержку:
     * Переменных, состоящих из произвольного количества букв `XYZ` в любом регистре
         * Настоящее имя переменной определяется первой буквой ее имени
@@ -161,8 +150,6 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
 Модификации
  * *Базовая*
     * Код должен находиться в файле `clojure-solutions/expression.clj`.
-    * [Исходный код тестов](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/cljtest/object/ObjectTest.java)
-        * Запускать c указанием модификации и сложности (`easy` или `hard`).
  * *SinCos* (32, 34). Дополнительно реализовать поддержку:
     * унарных операций:
         * `Sin` (`sin`) – синус, `(sin 4846147)` примерно равно 1;
@@ -186,8 +173,6 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
 Модификации
  * *Base*
     * Код должен находиться в файле `clojure-solutions/expression.clj`.
-    * [Исходный код тестов](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/cljtest/functional/FunctionalTest.java)
-        * Запускать c указанием модификации и сложности (`easy` или `hard`).
  * *ExpLn* (32, 34). Дополнительно реализовать поддержку:
     * унарных операций:
         * `exp` – экспонента, `(exp 8)` примерно равно 2981;
@@ -211,8 +196,6 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
 Модификации
  * *Базовая*
     * Код должен находиться в файле `clojure-solutions/linear.clj`.
-    * [Исходный код тестов](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/cljtest/linear/LinearTest.java)
-        * Запускать c указанием сложности (`easy` или `hard`) и модификации.
  * *Shapeless* (32 - 35)
     * Добавьте операции поэлементного
         сложения (`s+`), вычитания (`s-`), умножения (`s*`) и деления (`sd`)
@@ -252,7 +235,7 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
       должны быть предварительно распространены до тензоров большей размерности.
       Например, `(tb+ 1 [[10 20 30] [40 50 60]] [100 200])`
       должно быть равно `[[111 121 131] [241 251 261]]`.
-    * [Исходный код тестов](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/cljtest/linear/BroadcastTester.java)
+    * [Исходный код тестов](clojure/cljtest/linear/BroadcastTester.java)
 
 
 ## Исходный код к лекциям по Clojure
@@ -262,7 +245,7 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
  * [Clojure Cheat Sheet](https://clojure.org/api/cheatsheet)
 
 Запуск Clojure
- * Консоль: [Windows](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/RunClojure.cmd), [*nix](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/RunClojure.sh)
+ * Консоль: [Windows](clojure/RunClojure.cmd), [*nix](clojure/RunClojure.sh)
     * Интерактивный: `RunClojure`
     * С выражением: `RunClojure --eval "<выражение>"`
     * Скрипт: `RunClojure <файл скрипта>`
@@ -271,38 +254,38 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
     * IntelliJ Idea: [плагин Cursive](https://cursive-ide.com/userguide/)
     * Eclipse: [плагин Counterclockwise](https://marketplace.eclipse.org/content/counterclockwise)
 
-[Скрипт со всеми примерами](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/examples.clj)
+[Скрипт со всеми примерами](examples/clojure/examples.clj)
 
 Лекция 1. Функции
- * [Введение](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/examples/1_1_intro.clj)
- * [Функции](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/examples/1_2_functions.clj)
- * [Списки](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/examples/1_3_lists.clj)
- * [Вектора](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/examples/1_4_vectors.clj)
- * [Функции высшего порядка](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/examples/1_5_functions-2.clj)
+ * [Введение](examples/clojure/examples/1_1_intro.clj)
+ * [Функции](examples/clojure/examples/1_2_functions.clj)
+ * [Списки](examples/clojure/examples/1_3_lists.clj)
+ * [Вектора](examples/clojure/examples/1_4_vectors.clj)
+ * [Функции высшего порядка](examples/clojure/examples/1_5_functions-2.clj)
 
 Лекция 2. Внешний мир
- * [Ввод-вывод](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/examples/2_1_io.clj)
- * [Разбор и гомоиконность](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/examples/2_2_read.clj)
- * [Порядки вычислений](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/examples/2_3_evaluation-orders.clj)
- * [Потоки](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/examples/2_4_streams.clj)
- * [Отображения и множества](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/examples/2_5_maps.clj)
+ * [Ввод-вывод](examples/clojure/examples/2_1_io.clj)
+ * [Разбор и гомоиконность](examples/clojure/examples/2_2_read.clj)
+ * [Порядки вычислений](examples/clojure/examples/2_3_evaluation-orders.clj)
+ * [Потоки](examples/clojure/examples/2_4_streams.clj)
+ * [Отображения и множества](examples/clojure/examples/2_5_maps.clj)
 
 Лекция 3. Объекты
- * [Прототипное наследование](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/examples/3_1_js-objects.clj)
-    * Библиотека для ДЗ [proto.clj](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/examples/proto.clj)
- * [Java-классы](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/examples/3_2_java-objects.clj)
- * [Изменяемое состояние](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/examples/3_3_mutable-state.clj)
+ * [Прототипное наследование](examples/clojure/examples/3_1_js-objects.clj)
+    * Библиотека для ДЗ [proto.clj](examples/clojure/examples/proto.clj)
+ * [Java-классы](examples/clojure/examples/3_2_java-objects.clj)
+ * [Изменяемое состояние](examples/clojure/examples/3_3_mutable-state.clj)
 
 Лекция 4. Комбинаторные парсеры
- * [Базовые функции](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/examples/4_1_base.clj)
- * [Комбинаторы](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/examples/4_2_combinators.clj)
-    * Библиотека для ДЗ [parser.clj](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/examples/parser.clj)
- * [JSON](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/examples/4_3_json.clj)
+ * [Базовые функции](examples/clojure/examples/4_1_base.clj)
+ * [Комбинаторы](examples/clojure/examples/4_2_combinators.clj)
+    * Библиотека для ДЗ [parser.clj](examples/clojure/examples/parser.clj)
+ * [JSON](examples/clojure/examples/4_3_json.clj)
  
 Лекция 5. Макросы и основания математики
- * [Макросы](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/examples/5_1_macro.clj)
- * [Парсеры](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/examples/5_2_parser.clj)
- * [Числа Чёрча](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/examples/5_3_church.clj)
+ * [Макросы](examples/clojure/examples/5_1_macro.clj)
+ * [Парсеры](examples/clojure/examples/5_2_parser.clj)
+ * [Числа Чёрча](examples/clojure/examples/5_3_church.clj)
 
 
 ## Тестовое задание на Clojure
@@ -311,7 +294,7 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
 Вам надо проверить, что оно успешно проверяется на вашем компьютере.
 
 Для запуска тестов используются скрипты
-[TestClojure.cmd](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/TestClojure.cmd) и [TestClojure.sh](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/TestClojure.sh)
+[TestClojure.cmd](clojure/TestClojure.cmd) и [TestClojure.sh](clojure/TestClojure.sh)
  * Репозиторий должен быть скачан целиком.
  * Скрипты должны находиться в каталоге `clojure`
     (их нельзя перемещать, но можно вызывать из других каталогов).
@@ -323,7 +306,7 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
 Модификации
  * *base*
     * Код решения `clojure-solutions/example.clj`
-    * [Исходный код тестов](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/clojure/cljtest/example/ExampleTest.java)
+    * [Исходный код тестов](clojure/cljtest/example/ExampleTest.java)
         * Запускать c аргументом `hard` или `easy`.
 
 
@@ -332,8 +315,6 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
 Модификации
  * *Base*
     * Код должен находиться в файле `javascript-solutions/objectExpression.js`.
-    * [Исходный код тестов](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/jstest/prefix/ParserTest.java)
-        * Запускать c указанием модификации и сложности (`easy` или `hard`).
  * *SumAvg* (32-35). Дополнительно реализовать поддержку:
     * операций произвольного числа аргументов:
         * `sum` – сумма, `(sum 1 2 3)` равно 6;
@@ -343,7 +324,7 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
         * `(2 3 +)` равно 5
         * функция `parsePostfix`
         * метод `postfix`
-    * [Исходный код тестов](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/jstest/prefix/PostfixTest.java)
+    * [Исходный код тестов](javascript/jstest/prefix/PostfixTest.java)
         * Запускать c указанием модификации и сложности (`easy` или `hard`).
  * *SumexpLSE* (36, 37). Дополнительно реализовать поддержку:
     * Операций произвольного числа аргументов:
@@ -360,8 +341,6 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
 Модификации
  * *Base*
     * Код должен находиться в файле `javascript-solutions/objectExpression.js`.
-    * [Исходный код тестов](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/jstest/object/ObjectTest.java)
-        * Запускать c указанием модификации и сложности (`easy`, `hard` или `bonus`).
  * *ExpLn* (32, 34). Дополнительно реализовать поддержку:
     * унарных функций:
         * `Exp` (`exp`) – экспонента, `8 exp` примерно равно 2981;
@@ -386,8 +365,6 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
 Модификации
  * *Базовая*
     * Код должен находиться в файле `javascript-solutions/functionalExpression.js`.
-    * [Исходный код тестов](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/jstest/functional/FunctionalTest.java)
-        * Запускать c аргументом `hard` или `easy`.
  * *OneTwo* (32-39). Дополнительно реализовать поддержку:
     * констант:
         * `one` – 1;
@@ -415,41 +392,41 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
 
 ## Исходный код к лекциям по JavaScript
 
-[Скрипт с примерами](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/examples.js)
+[Скрипт с примерами](examples/javascript/examples.js)
 
 Запуск примеров
- * [В браузере](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/RunJS.html)
+ * [В браузере](javascript/RunJS.html)
  * Из консоли
-    * [на Java](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/RunJS.java): [RunJS.cmd](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/RunJS.cmd), [RunJS.sh](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/RunJS.sh)
-    * [на node.js](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/RunJS.node.js): `node RunJS.node.js`
+    * [на Java](javascript/RunJS.java): [RunJS.cmd](javascript/RunJS.cmd), [RunJS.sh](javascript/RunJS.sh)
+    * [на node.js](javascript/RunJS.node.js): `node RunJS.node.js`
 
 Лекция 1. Типы и функции
- * [Типы](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/examples/1_1_types.js)
- * [Функции](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/examples/1_2_functions.js)
- * [Функции высшего порядка](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/examples/1_3_functions-hi.js).
+ * [Типы](examples/javascript/examples/1_1_types.js)
+ * [Функции](examples/javascript/examples/1_2_functions.js)
+ * [Функции высшего порядка](examples/javascript/examples/1_3_functions-hi.js).
    Обратите внимание на реализацию функции `mCurry`.
    Обратите внимание, что функции `array.map` и
    `array.reduce` (аналог `leftFold` входят в стандартную библиотеку).
- * [Пример: вектора и матрицы](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/examples/1_4_vectors.js).
+ * [Пример: вектора и матрицы](examples/javascript/examples/1_4_vectors.js).
 
 Лекция 2. Объекты и замыкания
- * [Поля](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/examples/2_1_fields.js)
- * [Методы](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/examples/2_2_methods.js)
- * [Замыкания](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/examples/2_3_closures.js)
- * [Модули](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/examples/2_4_modules.js)
- * [Пример: стеки](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/examples/2_5_stacks.js)
+ * [Поля](examples/javascript/examples/2_1_fields.js)
+ * [Методы](examples/javascript/examples/2_2_methods.js)
+ * [Замыкания](examples/javascript/examples/2_3_closures.js)
+ * [Модули](examples/javascript/examples/2_4_modules.js)
+ * [Пример: стеки](examples/javascript/examples/2_5_stacks.js)
 
 Лекция 3. Другие возможности
- * [Обработка ошибок](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/examples/3_1_errors.js)
- * [Чего нет в JS](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/examples/3_2_no.js)
- * [Стандартная библиотека](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/examples/3_3_builtins.js)
- * [Работа со свойствами](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/examples/3_4_properties.js)
- * [Методы и классы](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/examples/3_5_classes.js)
- * [JS 6+](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/examples/3_6_js6.js)
+ * [Обработка ошибок](examples/javascript/examples/3_1_errors.js)
+ * [Чего нет в JS](examples/javascript/examples/3_2_no.js)
+ * [Стандартная библиотека](examples/javascript/examples/3_3_builtins.js)
+ * [Работа со свойствами](examples/javascript/examples/3_4_properties.js)
+ * [Методы и классы](examples/javascript/examples/3_5_classes.js)
+ * [JS 6+](examples/javascript/examples/3_6_js6.js)
  * Модули:
-   [объявление](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/examples/3_7_js6_module.mjs)
-   [использование](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/examples/3_7_js6_module_usage.mjs)
- * [Простейший ввод-вывод](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/examples/3_8_io.js)
+   [объявление](examples/javascript/examples/3_7_js6_module.mjs)
+   [использование](examples/javascript/examples/3_7_js6_module_usage.mjs)
+ * [Простейший ввод-вывод](examples/javascript/examples/3_8_io.js)
 
 
 ## Тестовое задание на JavaScript
@@ -460,7 +437,7 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
 Запуск тестов
  * Для запуска тестов используется [GraalJS](https://github.com/graalvm/graaljs)
    (часть проекта [GraalVM](https://www.graalvm.org/), вам не требуется их скачивать отдельно)
- * Для запуска тестов можно использовать скрипты [TestJS.cmd](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/TestJS.cmd) и [TestJS.sh](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/TestJS.sh)
+ * Для запуска тестов можно использовать скрипты [TestJS.cmd](javascript/TestJS.cmd) и [TestJS.sh](javascript/TestJS.sh)
     * Репозиторий должен быть скачан целиком.
     * Скрипты должны находиться в каталоге `javascript` (их нельзя перемещать, но можно вызывать из других каталогов).
     * В качестве аргументов командной строки указывается полное имя класса теста и модификация,
@@ -485,7 +462,7 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
 Модификации
  * *base*
     * Код решения `java-solutions/example.js`
-    * [Исходный код тестов](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/javascript/jstest/example/ExampleTest.java)
+    * [Исходный код тестов](javascript/jstest/example/ExampleTest.java)
         * Запускать c аргументом `hard` или `easy`.
 
 
@@ -494,7 +471,7 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
 Модификации
  * *Base*
     * Класс `GenericTabulator` должен реализовывать интерфейс
-      [Tabulator](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/java/expression/generic/Tabulator.java) и
+      [Tabulator](java/expression/generic/Tabulator.java) и
       строить трехмерную таблицу значений заданного выражения.
         * `mode` – режим вычислений:
            * `i` – вычисления в `int` с проверкой на переполнение;
@@ -507,7 +484,7 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
           значение выражения для `x = x1 + i`, `y = y1 + j`, `z = z1 + k`.
           Если значение не определено (например, по причине переполнения),
           то соответствующий элемент должен быть равен `null`.
-    * [Исходный код тестов](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/java/expression/generic/GenericTest.java)
+    * [Исходный код тестов](java/expression/generic/GenericTest.java)
         * Первый аргумент: `easy` или `hard`
         * Последующие аргументы: модификации
  * *Ufs* (32-35)
@@ -536,9 +513,6 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
 ## Домашнее задание 4. Очереди
 
 Модификации
- * *Базовая*
-    * [Исходный код тестов](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/java/queue/QueueTest.java)
-    * [Откомпилированные тесты](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/artifacts/queue/QueueTest.jar)
  * *Count* (32, 34)
     * Реализовать метод `count`, возвращающий число вхождений элемента в очередь.
  * *Index* (33, 35)
@@ -567,8 +541,6 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
 Модификации
  * *Базовая*
     * Классы должны находиться в пакете `queue`
-    * [Исходный код тестов](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/java/queue/ArrayQueueTest.java)
-    * [Откомпилированные тесты](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/artifacts/queue/ArrayQueueTest.jar)
  * *ToStr* (32, 34)
     * Реализовать метод `toStr`, возвращающий строковое представление
       очереди в виде '`[`' _голова_ '`, `' ... '`, `' _хвост_ '`]`'
@@ -599,8 +571,6 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
 Модификации
  * *Базовая*
     * Класс `BinarySearch` должен находиться в пакете `search`
-    * [Исходный код тестов](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/java/search/BinarySearchTest.java)
-    * [Откомпилированные тесты](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/artifacts/search/BinarySearchTest.jar)
  * *Oddity* (32 - 37)
     * Если сумма всех чисел во входе чётная, то должна быть использоваться
       рекурсивная версия, иначе — итеративная.
@@ -635,15 +605,12 @@ Course by [kgeorgiy](https://www.kgeorgiy.info/)
 Модификации
  * *Base*
     * Класс `ExpressionParser` должен реализовывать интерфейс
-        [TripleParser](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/java/expression/exceptions/TripleParser.java)
+        [TripleParser](java/expression/exceptions/TripleParser.java)
     * Классы `CheckedAdd`, `CheckedSubtract`, `CheckedMultiply`,
         `CheckedDivide` и `CheckedNegate` должны реализовывать интерфейс
-        [TripleExpression](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/java/expression/TripleExpression.java)
+        [TripleExpression](java/expression/TripleExpression.java)
     * Нельзя использовать типы `long` и `double`
     * Нельзя использовать методы классов `Math` и `StrictMath`
-    * [Исходный код тестов](https://www.kgeorgiy.info/git/geo/paradigms-2023/src/branch/master/java/expression/exceptions/ExceptionsTest.java)
-        * Первый аргумент: `easy` или `hard`
-        * Последующие аргументы: модификации
  * *SetClear* (32-37)
     * Дополнительно реализуйте бинарные операции (минимальный приоритет):
         * `set` – установка бита, `2 set 3` равно 10;
